@@ -1,0 +1,116 @@
+# Role-Based Access Control (RBAC) Implementation Plan
+
+## Goal
+Add an additive RBAC layer to OpenLab so each role (Admin, Pathologist, Technician) sees only their permitted pages and data. No existing logic is rebuilt — only guards and role-specific dashboards are added.
+
+## Existing Infrastructure (Already Built — NOT Modified)
+- **[requireRole(...roles)](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/middleware/auth.js#18-26) middleware** in [backend/src/middleware/auth.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/middleware/auth.js) — ready to use
+- **[ProtectedRoute](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/App.jsx#19-33) component** in [App.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/App.jsx) — already supports a `roles` prop
+- **[Layout.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/components/Layout.jsx) NAV_ITEMS** — already has a `roles` array filter per nav link
+- **[users.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/routes/users.js)**, **[tests.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/routes/tests.js) (CUD)**, **[lab-settings.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/routes/lab-settings.js) (PUT/POST)**, **[audit.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/routes/audit.js)** — already have [requireRole('admin')](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/middleware/auth.js#18-26) guards
+
+---
+
+## Access Matrix
+
+| Resource | Admin | Pathologist | Technician |
+|---|---|---|---|
+| Dashboard (own) | ✅ Full | ✅ Clinical only | ✅ Worklist only |
+| Patients (CRUD) | ✅ Full | 👁 View only | ❌ No access |
+| Samples (List/Detail) | ✅ Full | 👁 View only | ✅ View + update status |
+| Sample Create/Delete | ✅ | ❌ | ❌ |
+| Enter Results | ✅ | ❌ | ✅ |
+| Verify & Sign off | ✅ | ✅ | ❌ |
+| Test Catalog | ✅ Full | ❌ | ❌ |
+| Invoices | ✅ Full | ❌ | ❌ |
+| Reports/Print | ✅ | 👁 View | ❌ |
+| Settings | ✅ | ❌ | ❌ |
+| User Management | ✅ | ❌ | ❌ |
+| Audit Log | ✅ | ❌ | ❌ |
+
+---
+
+## Proposed Changes
+
+### Backend Route Guards
+
+#### [MODIFY] [patients.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/routes/patients.js)
+- `GET /` and `GET /:id` → [requireRole('admin', 'pathologist')](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/middleware/auth.js#18-26) (view access)
+- `POST /` and `PUT /:id` → [requireRole('admin')](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/middleware/auth.js#18-26) (write access)
+
+#### [MODIFY] [samples.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/routes/samples.js)
+- `POST /` (create sample) → [requireRole('admin')](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/middleware/auth.js#18-26) — only admin can create samples
+- `PUT /:id/status` → [requireRole('admin', 'technician')](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/middleware/auth.js#18-26) — technicians can update status
+- `GET /` and `GET /:id` — all roles can view (no change needed)
+- `POST /:id/results` — already guarded [('admin', 'technician')](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/App.jsx#58-67) ✅
+- `PUT /:id/verify` — already guarded [('admin', 'pathologist')](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/App.jsx#58-67) ✅
+
+#### [MODIFY] [invoices.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/routes/invoices.js)
+- All routes → [requireRole('admin')](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/middleware/auth.js#18-26) (router-level guard)
+
+#### [MODIFY] [reports.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/routes/reports.js)
+- `GET /:sampleId` (report data) → [requireRole('admin', 'pathologist')](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/middleware/auth.js#18-26) — pathologists need to see reports for verification
+- `GET /stats/dashboard` → keep open for all roles (dashboard stats)
+
+#### [MODIFY] [lab-settings.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/routes/lab-settings.js)
+- `GET /` is public (needed for invoice printing) — **no change**
+- `PUT /` and `POST /logo` already admin-guarded ✅
+
+#### [MODIFY] [audit.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/routes/audit.js)
+- Already admin-guarded ✅ — **no change**
+
+---
+
+### Frontend Navigation & Route Guards
+
+#### [MODIFY] [Layout.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/components/Layout.jsx)
+- Update `NAV_ITEMS` roles:
+  - [Patients](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/pages/Patients.jsx#91-187) → `['admin', 'pathologist']`
+  - `Test Catalog` → `['admin']`
+  - [Invoices](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/pages/Invoices.jsx#351-450) → `['admin']`
+  - [Settings](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/pages/Settings.jsx#8-284) → `['admin']`
+- Hide Settings from sidebar dropdown for non-admin roles
+
+#### [MODIFY] [App.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/App.jsx)
+- Wrap routes in [ProtectedRoute](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/App.jsx#19-33) with appropriate roles:
+  - `/patients`, `/patients/:id` → `roles={['admin', 'pathologist']}`
+  - `/tests` → `roles={['admin']}`
+  - `/invoices`, `/invoices/:id/print` → `roles={['admin']}`
+  - `/settings` → `roles={['admin']}`
+  - `/report/:sampleId` → `roles={['admin', 'pathologist']}`
+- Update redirect: when unauthorized role hits a guarded route, show toast "Access Denied" then redirect to `/`
+
+---
+
+### Role-Specific Dashboards
+
+#### [MODIFY] [Dashboard.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/pages/Dashboard.jsx)
+- Render different dashboard views based on `user.role`:
+  - **Admin**: Keep current full dashboard (stats, financial overview, pipeline, recent samples, recent invoices) — **no change to this view**
+  - **Pathologist Dashboard**: Show only:
+    - Welcome header (no financial subtitle)
+    - "Pending Verifications" card — Completed but unverified samples sorted by urgency (STAT > Urgent > Routine)
+    - "Recently Completed" card — latest completed samples
+    - No financial data anywhere
+  - **Technician Dashboard**: Show only:
+    - Welcome header (no financial subtitle)
+    - "My Worklist" card — Registered and In Progress samples sorted by urgency
+    - Quick stats: Registered count, In Progress count
+    - No financial data anywhere
+
+> [!IMPORTANT]
+> All three dashboard views reuse existing API endpoints (`reportsAPI.stats()`, `samplesAPI.list()`). The Pathologist and Technician views simply call `samplesAPI.list()` with status filters and hide financial widgets. No new API endpoints needed.
+
+---
+
+## Verification Plan
+
+### Manual Verification
+1. **Admin login** → Confirm full sidebar, full dashboard with financial data, can access all pages
+2. **Pathologist login** → Confirm restricted sidebar (Dashboard, Samples only), no financial data, can view samples and verify completed ones, cannot create/delete samples or patients
+3. **Technician login** → Confirm restricted sidebar (Dashboard, Samples only), worklist dashboard, can enter results and update status, cannot verify or access patients/invoices/settings
+4. **Direct URL test** → As Technician, navigate to `/invoices` → should redirect to `/` with "Access Denied" toast
+5. **API test** → As Technician, `POST /api/patients` → should return 403
+
+### Backend Verification
+- Test each guarded route with wrong role via curl/browser → expect 403

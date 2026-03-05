@@ -1,0 +1,112 @@
+# OpenLab LIMS — Build Walkthrough
+
+## Reference App (Lovable Prototype)
+We explored the existing Lovable prototype to match its UX and feature set:
+
+![OpenLab Lovable app exploration](C:/Users/Saad Sajid/.gemini/antigravity/brain/a181b4ad-e0b1-4bf6-951e-623497d53f6e/openlab_reference.webp)
+
+## What Was Built
+
+A complete full-stack LIMS with a React frontend and Node.js/Express backend connected to PostgreSQL.
+
+## Project Structure
+
+```
+Lab Software/
+├── README.md                     ← Setup guide
+├── backend/
+│   ├── .env                      ← DB config (edit DATABASE_URL)
+│   ├── package.json
+│   └── src/
+│       ├── index.js              ← Express server entry
+│       ├── db/
+│       │   ├── pool.js           ← PostgreSQL connection pool
+│       │   ├── schema.sql        ← 8-table DB schema + triggers
+│       │   ├── seed.sql          ← 3 users, 5 tests, 2 patients
+│       │   └── init.js           ← DB init script (npm run db:init)
+│       ├── middleware/
+│       │   └── auth.js           ← JWT verify + requireRole()
+│       └── routes/
+│           ├── auth.js           ← POST /api/auth/login
+│           ├── users.js          ← Admin-only CRUD
+│           ├── patients.js       ← Patient CRUD + visit history
+│           ├── tests.js          ← Test catalog CRUD
+│           ├── samples.js        ← Job queue + results + audit
+│           ├── reports.js        ← Report data + dashboard stats
+│           └── audit.js          ← Audit log query + logAudit()
+└── frontend/
+    └── src/
+        ├── App.jsx               ← Routing + protected routes
+        ├── api/index.js          ← Axios layer for all endpoints
+        ├── contexts/AuthContext  ← Login/logout/user state
+        ├── components/Layout.jsx ← Sidebar with role-based nav
+        └── pages/
+            ├── Login.jsx         ← Auth with demo quick-fill
+            ├── Dashboard.jsx     ← Live stats cards + pipeline
+            ├── Patients.jsx      ← Patient list + register modal
+            ├── PatientDetail.jsx ← Profile + visit history
+            ├── Samples.jsx       ← Job queue table + new order
+            ├── SampleDetail.jsx  ← Result entry + abnormal flags
+            ├── TestCatalog.jsx   ← Test catalog + edit modal
+            ├── ReportPage.jsx    ← Print-ready report + PDF
+            ├── AuditLog.jsx      ← Admin-only change log
+            └── UserManagement.jsx← Admin-only user CRUD
+```
+
+## Key Technical Decisions
+
+| Feature | Implementation |
+|---|---|
+| Auth | JWT (7d expiry) + bcrypt password hashing |
+| Role control | [requireRole()](file:///H:/Webiste%20Projects/Lab%20Software/backend/src/middleware/auth.js#18-26) middleware on every route |
+| Auto IDs | DB triggers: `OL-000001` patients, `S-000001` samples |
+| Abnormal detection | Realtime in UI; persisted `is_abnormal` flag on save |
+| Audit log | Every result INSERT/UPDATE logs old→new value, user, timestamp |
+| PDF | jsPDF + jspdf-autotable with red abnormal rows |
+| Status flow | `Pending → Collected → Processing → Completed → Verified` |
+
+## Setup Steps
+
+### 1. Set Database URL
+Edit [backend/.env](file:///H:/Webiste%20Projects/Lab%20Software/backend/.env):
+```
+DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/openlab
+```
+
+### 2. Initialize Database
+```bash
+psql -U postgres -c "CREATE DATABASE openlab;"
+cd backend && npm run db:init
+```
+
+### 3. Start Both Servers
+
+**Terminal 1 (Backend):**
+```bash
+cd backend && npm run dev
+```
+
+**Terminal 2 (Frontend):**
+```bash
+cd frontend && npm run dev
+```
+
+Visit: **http://localhost:5173**
+
+### Demo Credentials
+| Role | Email | Password |
+|---|---|---|
+| Admin | admin@openlab.com | password |
+| Technician | tech@openlab.com | password |
+| Pathologist | path@openlab.com | password |
+
+## End-to-End Workflow to Test
+1. Login as **Admin** → register a new patient
+2. Go to **Job Queue** → create a sample order for CBC
+3. Advance status to **Collected** → **Processing**  
+4. Login as **Technician** → go to sample detail
+5. Enter an abnormal Hb value (e.g., `5.0` — below 12 minimum) → red badge appears immediately
+6. Save results → advance to **Completed**
+7. Login as **Pathologist** → click **Verify & Sign**
+8. Click **View Report** → PDF shows abnormal values in red
+9. Login as **Admin** → check **Audit Log** — every change tracked

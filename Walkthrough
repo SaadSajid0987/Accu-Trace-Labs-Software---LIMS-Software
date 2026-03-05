@@ -1,0 +1,21 @@
+# Dark Mode Implementation
+
+The Light & Dark mode feature has been successfully added to the OpenLab application frontend.
+
+### Changes Made
+- Configured **Tailwind CSS** to use `darkMode: 'class'`, enabling us to toggle the theme globally via a top-level HTML element class.
+- Introduced `ThemeContext.jsx` to read and toggle the system or user's preferred theme, persisting this choice in `localStorage`.
+- Wrapped the entire application tree in `src/App.jsx` with the `<ThemeProvider>`.
+- Added an interactive **Theme Toggle** inside the Sidebar (`Layout.jsx`) using `lucide-react` icons (Sun and Moon) to easily switch between modes.
+- Overhauled `src/index.css`, injecting `dark:` utility variants to `.btn-*`, `.badge-*`, `.card`, `.table`, `.input`, `.modal`, and native scrollbar elements.
+- Cleaned up inline/hardcoded Tailwind colors in elements across `Dashboard.jsx` (such as `BentoCard` and `ModernStatCard`) and `Login.jsx` to respond elegantly to the active theme.
+
+### Verification Done
+- Verified that all components compile seamlessly using `npm run build` after syntax corrections in arbitrary Tailwind shadows.
+- Verified that text remains high contrast and legible, and shadows/borders subtly blend into the darker backdrop.
+
+The application natively observes system defaults and caches manual updates, ensuring a sleek and immersive user experience. Follow-up fixes resolved an issue where Vite cached the old Tailwind configuration, explicitly activating the `dark:` utility variants. In addition, an easing-based, universal background transition was implemented (`transition-colors duration-300 ease-in-out`), fulfilling requirements for a smooth and sophisticated animation without sudden flashes of light or dark.
+
+### Demonstration
+Here is a recording showing the functional and smoothly animated theme toggle in action:
+![Theme Toggle Animation Verification](C:\Users\Saad Sajid\.gemini\antigravity\brain\fa41be58-8d36-4d91-8da4-04eeadafbbf3\theme_toggle_final_verification_1771937731100.webp)

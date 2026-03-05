@@ -1,0 +1,68 @@
+# Lab Branding, Test Pricing & Invoice Generator — Walkthrough
+
+## What Was Built
+
+Three additive features deployed without altering any existing functionality:
+
+### Feature 1 — Lab Branding (Settings)
+- Added **Lab Profile** section to [Settings.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/pages/Settings.jsx) (admin-only)
+- Fields: Lab Name, Logo (image upload), Tagline, Address, Phone 1/2/3, Email, License Number
+- Backend: `lab_settings` table + [lab-settings.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/routes/lab-settings.js) route with multer file upload
+- Logo served via `/uploads` static directory with vite proxy
+
+### Feature 2 — Test Catalog Pricing
+- Prices already display on the Test Catalog page (e.g. `PKR 200`, `PKR 1,500`)
+- Price field already existed in the TestModal for create/edit — no changes needed
+
+### Feature 3 — Invoice Generator
+
+**Database:** `invoices` + `invoice_items` tables with auto-numbered `INV-YYYY-XXXX` sequence
+
+**Auto-creation:** Invoice created atomically when a new sample order is placed — snapshots patient name, referring doctor, test names, and prices
+
+**Invoice Preview in New Sample Modal:**
+- Shows itemized tests with prices when tests are selected
+- Discount amount + reason, Payment method, Amount paid fields
+- Real-time calculated Net Payable, Balance Due, and colored status badge (Unpaid/Partial/Paid)
+
+**Invoices Management Page (`/invoices`):**
+- Searchable, filterable table with status tabs (All / Unpaid / Partial / Paid)
+- Columns: Invoice #, Patient, Date, Tests, Net Payable, Paid, Balance, Status
+- Click → detail modal with test items, payment summary, and payment update form
+- Print Invoice link opens `/invoices/:id/print`
+
+**Print Invoice Page:**
+- A4 print-optimized layout with lab branding header
+- Patient info, itemized test table, payment summary
+- PAID watermark stamp when fully paid
+- Auto-triggers `window.print()` on load
+
+## Files Changed
+
+| Component | File | Change |
+|---|---|---|
+| Migration | [migrate_features.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/migrate_features.js) | Created & ran, then deleted |
+| Backend | [lab-settings.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/routes/lab-settings.js) | **NEW** — CRUD + logo upload |
+| Backend | [invoices.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/routes/invoices.js) | **NEW** — list, detail, payment update |
+| Backend | [samples.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/routes/samples.js) | Modified POST route for invoice auto-creation |
+| Backend | [index.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/index.js) | Mounted new routes, `/uploads` static |
+| Frontend API | [api/index.js](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/api/index.js) | Added `labSettingsAPI` + `invoicesAPI` |
+| Frontend | [Settings.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/pages/Settings.jsx) | Added Lab Profile section |
+| Frontend | [Invoices.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/pages/Invoices.jsx) | **NEW** — management page |
+| Frontend | [InvoicePrint.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/pages/InvoicePrint.jsx) | **NEW** — print layout |
+| Frontend | [Samples.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/pages/Samples.jsx) | Extended NewSampleModal with invoice preview |
+| Frontend | [App.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/App.jsx) | Added invoice routes |
+| Frontend | [Layout.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/components/Layout.jsx) | Added Invoices nav item |
+| Config | [vite.config.js](file:///h:/Webiste%20Projects/Lab%20Software/frontend/vite.config.js) | Added `/uploads` proxy |
+
+## Verification Results
+
+All features tested in browser:
+
+- ✅ Sidebar shows new "Invoices" nav item
+- ✅ Test Catalog displays prices (PKR) per test
+- ✅ Invoices page loads with search/filter/status tabs
+- ✅ Settings page shows Lab Profile section (admin only)
+- ✅ New Sample modal shows live Invoice Preview with itemized tests, discount, payment fields, and real-time status badge
+
+![Invoices page with search and status filters](file:///C:/Users/Saad%20Sajid/.gemini/antigravity/brain/9fcdeaa7-a67c-42e6-b944-886cf085d8c7/verifying_all_features_1771896738069.webp)

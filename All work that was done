@@ -1,0 +1,59 @@
+# Patient Portal — Share via WhatsApp ✅
+
+## What Was Built
+
+A complete **Secure Patient Portal** system enabling staff to share test reports and invoices with patients via WhatsApp using secure, time-limited links.
+
+## New Files Created
+
+| File | Purpose |
+|------|---------|
+| [portal.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/routes/portal.js) | Backend API — `POST /generate` (auth) + `GET /:token` (public) |
+| [migrate-portal.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/db/migrate-portal.js) | DB migration for `patient_portal_links` table |
+| [ShareModal.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/components/ShareModal.jsx) | WhatsApp share / Copy Link / Dismiss popup |
+| [PatientPortal.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/pages/PatientPortal.jsx) | Public portal page — report view, invoice view, error states |
+
+## Existing Files Modified (Minimal Insertions Only)
+
+| File | Change |
+|------|--------|
+| [index.js](file:///h:/Webiste%20Projects/Lab%20Software/backend/src/index.js) | +2 lines: import + register `portalRouter` |
+| [api/index.js](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/api/index.js) | +5 lines: `portalAPI` export |
+| [App.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/App.jsx) | +2 lines: import + public `/portal/:token` route |
+| [ReportPage.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/pages/ReportPage.jsx) | Share button + ShareModal integration |
+| [InvoicePrint.jsx](file:///h:/Webiste%20Projects/Lab%20Software/frontend/src/pages/InvoicePrint.jsx) | Share button + ShareModal integration |
+
+## Dark Mode Fixes (Invoice Modal)
+Added missing Tailwind `dark:` modifiers to the Invoice Detail pane to ensure readability against the dark theme background. 
+* Applied `dark:text-slate-200`/`400` to labels and values.
+* Applied `dark:bg-slate-800/80` and complementary border colors to the summary cards and table separators.
+
+## Verification
+
+- ✅ Frontend builds with **zero errors** (1950 modules)
+- ✅ Portal route is publicly accessible (no login required)
+- ✅ Invalid tokens show branded "Link Not Found" error page
+- ✅ All existing functionality untouched
+- ✅ Invoice modal text now clearly visible in dark mode
+
+## Portfolio Media and Demo
+
+### End-to-End Video Demo
+![End-to-End Testing Demo Video](C:/Users/Saad Sajid/.gemini/antigravity/brain/245313d3-af68-4767-a0f4-6bbe3abb88cf/openlab_e2e_portfolio_demo_1771974261387.webp)
+
+### Key Feature Screenshots
+````carousel
+![Dashboard Overview](C:/Users/Saad Sajid/.gemini/antigravity/brain/245313d3-af68-4767-a0f4-6bbe3abb88cf/dashboard_1771974291238.png)
+<!-- slide -->
+![Samples List](C:/Users/Saad Sajid/.gemini/antigravity/brain/245313d3-af68-4767-a0f4-6bbe3abb88cf/samples_list_1771974313435.png)
+<!-- slide -->
+![Result Entry & Details](C:/Users/Saad Sajid/.gemini/antigravity/brain/245313d3-af68-4767-a0f4-6bbe3abb88cf/sample_detail_1771974329165.png)
+<!-- slide -->
+![Test Catalog](C:/Users/Saad Sajid/.gemini/antigravity/brain/245313d3-af68-4767-a0f4-6bbe3abb88cf/test_catalog_list_1771974346601.png)
+<!-- slide -->
+![Invoices & Billing](C:/Users/Saad Sajid/.gemini/antigravity/brain/245313d3-af68-4767-a0f4-6bbe3abb88cf/invoices_list_1771974365368.png)
+<!-- slide -->
+![Patient Share Modal](C:/Users/Saad Sajid/.gemini/antigravity/brain/245313d3-af68-4767-a0f4-6bbe3abb88cf/share_modal_1771974445552.png)
+<!-- slide -->
+![Public Patient Portal](C:/Users/Saad Sajid/.gemini/antigravity/brain/245313d3-af68-4767-a0f4-6bbe3abb88cf/patient_portal_view_1771974467628.png)
+````
