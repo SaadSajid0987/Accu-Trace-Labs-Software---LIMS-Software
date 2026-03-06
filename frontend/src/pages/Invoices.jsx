@@ -355,6 +355,7 @@ export default function Invoices() {
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState('All');
     const [selected, setSelected] = useState(null);
+    const [stats, setStats] = useState({ total: 0, revenue: 0, outstanding: 0, unpaid: 0 });
 
     const load = useCallback(async () => {
         setLoading(true);
@@ -362,9 +363,23 @@ export default function Invoices() {
             const params = { limit: 50, offset: 0 };
             if (search) params.search = search;
             if (statusFilter !== 'All') params.payment_status = statusFilter;
-            const { data } = await invoicesAPI.list(params);
-            setInvoices(data.invoices);
-            setTotal(data.total);
+
+            const [listRes, analyticsRes] = await Promise.all([
+                invoicesAPI.list(params),
+                invoicesAPI.analytics({ period: 'custom', from: '2000-01-01' })
+            ]);
+
+            setInvoices(listRes.data.invoices);
+            setTotal(listRes.data.total);
+
+            if (analyticsRes.data && analyticsRes.data.metrics) {
+                setStats({
+                    total: analyticsRes.data.metrics.total_invoices || 0,
+                    revenue: analyticsRes.data.metrics.revenue_collected || 0,
+                    outstanding: analyticsRes.data.metrics.outstanding_balance || 0,
+                    unpaid: analyticsRes.data.metrics.unpaid_invoices || 0,
+                });
+            }
         } catch { toast.error('Failed to load invoices'); }
         finally { setLoading(false); }
     }, [search, statusFilter]);
@@ -379,6 +394,43 @@ export default function Invoices() {
                 <div>
                     <h1 className="text-2xl font-bold text-slate-800 dark:text-white">Invoices</h1>
                     <p className="text-slate-500 dark:text-slate-400 text-sm">{total} invoice{total !== 1 ? 's' : ''}</p>
+                </div>
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="card p-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800/80 group">
+                    <div className="h-1 w-full bg-[#4f8ef7]"></div>
+                    <div className="p-4">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Invoices</p>
+                        <p className="text-3xl font-black text-slate-800 dark:text-white">{stats.total}</p>
+                        <p className="text-xs text-slate-400 font-medium mt-1">All time</p>
+                    </div>
+                </div>
+                <div className="card p-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800/80 group">
+                    <div className="h-1 w-full bg-[#34d399]"></div>
+                    <div className="p-4">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Revenue Collected</p>
+                        <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 tracking-tight">PKR {Number(stats.revenue).toLocaleString()}</p>
+                        <p className="text-xs text-slate-400 font-medium mt-1">Amount received</p>
+                    </div>
+                </div>
+                <div className="card p-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800/80 group">
+                    <div className="h-1 w-full bg-[#fb923c]"></div>
+                    <div className="p-4">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Outstanding Balance</p>
+                        <p className="text-3xl font-black text-slate-800 dark:text-white tracking-tight">PKR {Number(stats.outstanding).toLocaleString()}</p>
+                        <p className="text-xs text-slate-400 font-medium mt-1">Pending collection</p>
+                    </div>
+                </div>
+                <div className={`card p-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800/80 group relative ${stats.unpaid > 0 ? 'ring-1 ring-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.15)] dark:shadow-[0_0_15px_rgba(239,68,68,0.1)]' : ''}`}>
+                    {stats.unpaid > 0 && <div className="absolute inset-0 ring-2 ring-red-500/50 animate-pulse rounded-2xl pointer-events-none"></div>}
+                    <div className="h-1 w-full bg-[#f87171]"></div>
+                    <div className="p-4 relative z-10">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Unpaid Invoices</p>
+                        <p className="text-3xl font-black text-slate-800 dark:text-white">{stats.unpaid}</p>
+                        <p className="text-xs text-slate-400 font-medium mt-1">Needs follow-up</p>
+                    </div>
                 </div>
             </div>
 

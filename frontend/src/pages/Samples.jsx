@@ -255,15 +255,30 @@ export default function Samples() {
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [showModal, setShowModal] = useState(false);
+    const [stats, setStats] = useState({ total: 0, registered: 0, inProgress: 0, completedVerified: 0, priority: 0 });
 
     const load = useCallback(async () => {
         setLoading(true);
         try {
             const params = { search, limit: 50 };
             if (statusFilter !== 'All') params.status = statusFilter;
-            const { data } = await samplesAPI.list(params);
-            setSamples(data.samples);
-            setTotal(data.total);
+
+            const [listRes, allSamplesRes] = await Promise.all([
+                samplesAPI.list(params),
+                samplesAPI.list({ limit: 10000 })
+            ]);
+
+            setSamples(listRes.data.samples);
+            setTotal(listRes.data.total);
+
+            const allS = allSamplesRes.data.samples || [];
+            setStats({
+                total: allSamplesRes.data.total || allS.length,
+                registered: allS.filter(s => s.status === 'Registered').length,
+                inProgress: allS.filter(s => s.status === 'In Progress').length,
+                completedVerified: allS.filter(s => s.status === 'Completed' || s.is_verified).length,
+                priority: allS.filter(s => s.priority === 'Urgent' || s.priority === 'STAT').length,
+            });
         } catch { toast.error('Failed to load samples'); }
         finally { setLoading(false); }
     }, [search, statusFilter]);
@@ -280,6 +295,51 @@ export default function Samples() {
                 <button id="new-sample-btn" onClick={() => setShowModal(true)} className="btn-primary w-full sm:w-auto justify-center min-h-[44px]">
                     <Plus className="w-4 h-4" /> New Sample
                 </button>
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+                <div className="card p-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800/80 group">
+                    <div className="h-1 w-full bg-[#4f8ef7]"></div>
+                    <div className="p-4">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Samples</p>
+                        <p className="text-3xl font-black text-slate-800 dark:text-white">{stats.total}</p>
+                        <p className="text-xs text-slate-400 font-medium mt-1">All time</p>
+                    </div>
+                </div>
+                <div className="card p-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800/80 group">
+                    <div className="h-1 w-full bg-[#f87171]"></div>
+                    <div className="p-4">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Registered</p>
+                        <p className="text-3xl font-black text-slate-800 dark:text-white">{stats.registered}</p>
+                        <p className="text-xs text-slate-400 font-medium mt-1">Awaiting start</p>
+                    </div>
+                </div>
+                <div className="card p-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800/80 group">
+                    <div className="h-1 w-full bg-[#fbbf24]"></div>
+                    <div className="p-4">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">In Progress</p>
+                        <p className="text-3xl font-black text-slate-800 dark:text-white">{stats.inProgress}</p>
+                        <p className="text-xs text-slate-400 font-medium mt-1">Being processed</p>
+                    </div>
+                </div>
+                <div className="card p-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800/80 group">
+                    <div className="h-1 w-full bg-[#34d399]"></div>
+                    <div className="p-4">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Completed & Verified</p>
+                        <p className="text-3xl font-black text-slate-800 dark:text-white">{stats.completedVerified}</p>
+                        <p className="text-xs text-slate-400 font-medium mt-1">Finished</p>
+                    </div>
+                </div>
+                <div className={`card p-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800/80 group relative ${stats.priority > 0 ? 'ring-1 ring-red-500/20 shadow-[0_0_15px_rgba(239,68,68,0.15)] dark:shadow-[0_0_15px_rgba(239,68,68,0.1)]' : ''}`}>
+                    {stats.priority > 0 && <div className="absolute inset-0 ring-2 ring-red-500/50 animate-pulse rounded-2xl pointer-events-none"></div>}
+                    <div className="h-1 w-full bg-[#ef4444]"></div>
+                    <div className="p-4 relative z-10">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Urgent / STAT</p>
+                        <p className="text-3xl font-black text-slate-800 dark:text-white">{stats.priority}</p>
+                        <p className="text-xs text-slate-400 font-medium mt-1">Priority cases</p>
+                    </div>
+                </div>
             </div>
 
             {/* Filters */}

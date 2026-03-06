@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { patientsAPI } from '../api/index.js';
+import { patientsAPI, samplesAPI } from '../api/index.js';
 import { Plus, Search, User, ChevronRight, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LabLoader from '../components/LabLoader.jsx';
@@ -94,13 +94,51 @@ export default function Patients() {
     const [search, setSearch] = useState('');
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState(null); // null | 'new' | patient
+    const [stats, setStats] = useState({ total: 0, newThisMonth: 0, activeSamples: 0, totalTests: 0 });
 
     const load = useCallback(async () => {
         setLoading(true);
         try {
-            const { data } = await patientsAPI.list({ search, limit: 50 });
-            setPatients(data.patients);
-            setTotal(data.total);
+            const [patientsData, allPatientsObj, allSamplesObj] = await Promise.all([
+                patientsAPI.list({ search, limit: 50 }),
+                patientsAPI.list({ limit: 10000 }),
+                samplesAPI.list({ limit: 10000 })
+            ]);
+
+            setPatients(patientsData.data.patients);
+            setTotal(patientsData.data.total);
+
+            const allP = allPatientsObj.data.patients || [];
+            const allS = allSamplesObj.data.samples || [];
+
+            const now = new Date();
+            const currentMonth = now.getMonth();
+            const currentYear = now.getFullYear();
+
+            const newThisMonth = allP.filter(p => {
+                if (!p.created_at) return false;
+                const d = new Date(p.created_at);
+                return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            }).length;
+
+            const activePatientIds = new Set(
+                allS.filter(s => s.status === 'Registered' || s.status === 'In Progress').map(s => s.patient_id)
+            );
+
+            let totalTests = 0;
+            allS.forEach(s => {
+                if (Array.isArray(s.tests)) {
+                    totalTests += s.tests.length;
+                }
+            });
+
+            setStats({
+                total: allPatientsObj.data.total || allP.length,
+                newThisMonth,
+                activeSamples: activePatientIds.size,
+                totalTests
+            });
+
         } catch { toast.error('Failed to load patients'); }
         finally { setLoading(false); }
     }, [search]);
@@ -117,6 +155,42 @@ export default function Patients() {
                 <button id="register-patient-btn" onClick={() => setModal('new')} className="btn-primary w-full sm:w-auto justify-center min-h-[44px]">
                     <Plus className="w-4 h-4" /> Register Patient
                 </button>
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="card p-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800/80 group">
+                    <div className="h-1 w-full bg-[#4f8ef7]"></div>
+                    <div className="p-4">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Patients</p>
+                        <p className="text-3xl font-black text-slate-800 dark:text-white">{stats.total}</p>
+                        <p className="text-xs text-slate-400 font-medium mt-1">Registered</p>
+                    </div>
+                </div>
+                <div className="card p-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800/80 group">
+                    <div className="h-1 w-full bg-[#00d4aa]"></div>
+                    <div className="p-4">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">New This Month</p>
+                        <p className="text-3xl font-black text-slate-800 dark:text-white">{stats.newThisMonth}</p>
+                        <p className="text-xs text-slate-400 font-medium mt-1">This month</p>
+                    </div>
+                </div>
+                <div className="card p-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800/80 group">
+                    <div className="h-1 w-full bg-[#fbbf24]"></div>
+                    <div className="p-4">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Active Samples</p>
+                        <p className="text-3xl font-black text-slate-800 dark:text-white">{stats.activeSamples}</p>
+                        <p className="text-xs text-slate-400 font-medium mt-1">With open samples</p>
+                    </div>
+                </div>
+                <div className="card p-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800/80 group">
+                    <div className="h-1 w-full bg-[#a78bfa]"></div>
+                    <div className="p-4">
+                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-1">Total Tests Ordered</p>
+                        <p className="text-3xl font-black text-slate-800 dark:text-white">{stats.totalTests}</p>
+                        <p className="text-xs text-slate-400 font-medium mt-1">All time</p>
+                    </div>
+                </div>
             </div>
 
             {/* Search */}
