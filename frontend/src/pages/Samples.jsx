@@ -13,6 +13,7 @@ function NewSampleModal({ onClose, onSaved }) {
     const [patients, setPatients] = useState([]);
     const [tests, setTests] = useState([]);
     const [patientSearch, setPatientSearch] = useState('');
+    const [testSearch, setTestSearch] = useState('');
     const [form, setForm] = useState({ patient_id: '', test_ids: [], priority: 'Routine', notes: '' });
     const [loading, setLoading] = useState(false);
 
@@ -101,17 +102,63 @@ function NewSampleModal({ onClose, onSaved }) {
 
                     {/* Tests */}
                     <div>
-                        <label className="label">Tests *</label>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
-                            {tests.map(t => (
-                                <label key={t.id} className={`flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer transition-all ${form.test_ids.includes(t.id) ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 dark:border-blue-500/50' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'}`}>
-                                    <input type="checkbox" checked={form.test_ids.includes(t.id)} onChange={() => toggleTest(t.id)} className="mt-0.5" />
-                                    <div>
-                                        <p className={`text-sm font-medium ${form.test_ids.includes(t.id) ? 'text-blue-900 dark:text-blue-100' : 'text-slate-800 dark:text-slate-200'}`}>{t.name}</p>
-                                        <p className="text-xs text-slate-400 dark:text-slate-500">PKR {parseFloat(t.price).toLocaleString()}</p>
-                                    </div>
-                                </label>
-                            ))}
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="label mb-0">Tests *</label>
+                        </div>
+                        <input
+                            className="input mb-3"
+                            placeholder="Search tests..."
+                            value={testSearch}
+                            onChange={e => setTestSearch(e.target.value)}
+                        />
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1">
+
+                            {(() => {
+                                const filteredTests = tests.filter(t => t.name.toLowerCase().includes(testSearch.toLowerCase()));
+                                const panels = filteredTests.filter(t => t.type === 'Panel' || !t.type);
+                                const individuals = filteredTests.filter(t => t.type === 'Individual');
+
+                                return (
+                                    <>
+                                        {panels.length > 0 && (
+                                            <div className="col-span-1 sm:col-span-2 mt-1">
+                                                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Test Panels</h4>
+                                            </div>
+                                        )}
+                                        {panels.map(t => (
+                                            <label key={t.id} className={`flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer transition-all ${form.test_ids.includes(t.id) ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 dark:border-blue-500/50' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'}`}>
+                                                <input type="checkbox" checked={form.test_ids.includes(t.id)} onChange={() => toggleTest(t.id)} className="mt-0.5" />
+                                                <div className="flex-1">
+                                                    <p className={`text-sm font-medium ${form.test_ids.includes(t.id) ? 'text-blue-900 dark:text-blue-100' : 'text-slate-800 dark:text-slate-200'}`}>{t.name}</p>
+                                                    <div className="flex flex-wrap items-center gap-2 mt-1">
+                                                        <span className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700 text-[10px] font-semibold text-slate-600 dark:text-slate-300 rounded">{t.components?.length || 0} components</span>
+                                                        <span className="text-xs text-slate-400 dark:text-slate-500">PKR {parseFloat(t.price).toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        ))}
+
+                                        {individuals.length > 0 && (
+                                            <div className="col-span-1 sm:col-span-2 mt-3">
+                                                <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Individual Tests</h4>
+                                            </div>
+                                        )}
+                                        {individuals.map(t => (
+                                            <label key={t.id} className={`flex items-start gap-2 p-2.5 rounded-lg border cursor-pointer transition-all ${form.test_ids.includes(t.id) ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 dark:border-blue-500/50' : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'}`}>
+                                                <input type="checkbox" checked={form.test_ids.includes(t.id)} onChange={() => toggleTest(t.id)} className="mt-0.5" />
+                                                <div className="flex-1">
+                                                    <p className={`text-sm font-medium ${form.test_ids.includes(t.id) ? 'text-blue-900 dark:text-blue-100' : 'text-slate-800 dark:text-slate-200'}`}>{t.name}</p>
+                                                    <div className="flex items-center gap-1.5 mt-1">
+                                                        <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase">{t.category}</span>
+                                                        <span className="text-[10px] text-slate-400 dark:text-slate-500">•</span>
+                                                        <span className="text-xs text-slate-400 dark:text-slate-500">PKR {parseFloat(t.price).toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                            </label>
+                                        ))}
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
 

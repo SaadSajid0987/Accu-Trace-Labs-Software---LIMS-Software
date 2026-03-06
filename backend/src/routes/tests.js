@@ -47,13 +47,13 @@ router.get('/:id', async (req, res) => {
 router.post('/', requireRole('admin'), async (req, res) => {
     const client = await pool.connect();
     try {
-        const { name, category, price, turnaround_hours, description, components = [] } = req.body;
+        const { name, category, price, turnaround_hours, description, type, components = [] } = req.body;
         if (!name) return res.status(400).json({ error: 'Test name required' });
 
         await client.query('BEGIN');
         const { rows: [test] } = await client.query(
-            'INSERT INTO tests (name, category, price, turnaround_hours, description) VALUES ($1,$2,$3,$4,$5) RETURNING *',
-            [name, category, price || 0, turnaround_hours || 24, description]
+            'INSERT INTO tests (name, category, price, turnaround_hours, description, type) VALUES ($1,$2,$3,$4,$5,$6) RETURNING *',
+            [name, category, price || 0, turnaround_hours || 24, description, type || 'Individual']
         );
 
         for (let i = 0; i < components.length; i++) {
@@ -81,12 +81,12 @@ router.post('/', requireRole('admin'), async (req, res) => {
 router.put('/:id', requireRole('admin'), async (req, res) => {
     const client = await pool.connect();
     try {
-        const { name, category, price, turnaround_hours, description, components = [] } = req.body;
+        const { name, category, price, turnaround_hours, description, type, components = [] } = req.body;
         await client.query('BEGIN');
         const { rows: [test] } = await client.query(
-            `UPDATE tests SET name=$1, category=$2, price=$3, turnaround_hours=$4, description=$5
-       WHERE id=$6 RETURNING *`,
-            [name, category, price, turnaround_hours, description, req.params.id]
+            `UPDATE tests SET name=$1, category=$2, price=$3, turnaround_hours=$4, description=$5, type=$6
+       WHERE id=$7 RETURNING *`,
+            [name, category, price, turnaround_hours, description, type || 'Individual', req.params.id]
         );
         if (!test) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Test not found' }); }
 
