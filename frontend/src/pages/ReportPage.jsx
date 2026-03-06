@@ -385,7 +385,7 @@ export default function ReportPage() {
                                     <tbody>
                                         {test.components.map((c, i) => (
                                             <tr key={i} className={`border-b border-slate-100 ${c.is_abnormal ? 'bg-red-50' : i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                                                <td className="px-3 py-2 font-medium text-slate-800 sticky-col z-10 bg-inherit">{c.component_name}</td>
+                                                <td className="px-3 py-2 font-medium text-slate-500 sticky-col z-10 bg-inherit">{c.component_name}</td>
                                                 <td className={`px-3 py-2 font-semibold ${c.is_abnormal ? 'text-red-600' : 'text-slate-800'}`}>
                                                     {c.value || '—'}
                                                 </td>

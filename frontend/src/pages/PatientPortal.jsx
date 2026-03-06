@@ -249,7 +249,7 @@ function ReportView({ data, LabHeader, labName }) {
                                         const range = c.normal_text || (c.normal_min != null && c.normal_max != null ? `${c.normal_min} – ${c.normal_max}` : '—');
                                         return (
                                             <tr key={i} className={`border-b border-slate-100 ${c.is_abnormal ? 'bg-red-50' : i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
-                                                <td className="px-4 py-2.5 font-medium text-slate-800 sticky-col z-10 bg-inherit">{c.component_name}</td>
+                                                <td className="px-4 py-2.5 font-medium text-slate-500 sticky-col z-10 bg-inherit">{c.component_name}</td>
                                                 <td className={`px-4 py-2.5 font-semibold ${c.is_abnormal ? 'text-red-600' : 'text-slate-800'}`}>{c.value || '—'}</td>
                                                 <td className="px-4 py-2.5 text-slate-500 hidden sm:table-cell">{c.unit || '—'}</td>
                                                 <td className="px-4 py-2.5 text-slate-500 hidden sm:table-cell">{range}</td>
