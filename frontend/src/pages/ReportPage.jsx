@@ -7,20 +7,7 @@ import LabLoader from '../components/LabLoader.jsx';
 import ShareModal from '../components/ShareModal.jsx';
 import { portalAPI } from '../api/index.js';
 
-function QRPlaceholder({ text }) {
-    return (
-        <div className="w-20 h-20 border-2 border-slate-300 flex items-center justify-center rounded bg-white">
-            <div className="text-center">
-                <div className="grid grid-cols-3 gap-0.5 mb-1">
-                    {Array.from({ length: 9 }).map((_, i) => (
-                        <div key={i} className={`w-3 h-3 rounded-sm ${Math.random() > 0.5 ? 'bg-slate-800' : 'bg-white border border-slate-200'}`} />
-                    ))}
-                </div>
-                <p className="text-[8px] text-slate-400">QR Code</p>
-            </div>
-        </div>
-    );
-}
+
 
 export default function ReportPage() {
     const { sampleId } = useParams();
@@ -54,6 +41,26 @@ export default function ReportPage() {
             // ==========================================
             doc.setFillColor(30, 42, 74); // Dark blue background matching sidebar (#1E2A4A)
             doc.rect(0, 0, 210, 36, 'F');
+
+            // Load logo
+            let logoBase64 = null;
+            try {
+                const response = await fetch('/Lab_Logo.jpg');
+                const blob = await response.blob();
+                logoBase64 = await new Promise(resolve => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+            } catch (err) {
+                console.error('Failed to load logo for PDF', err);
+            }
+
+            if (logoBase64) {
+                doc.setFillColor(255, 255, 255);
+                doc.roundedRect(172, 6, 24, 24, 2, 2, 'F');
+                doc.addImage(logoBase64, 'JPEG', 174, 8, 20, 20);
+            }
 
             // Header Text (White)
             doc.setTextColor(255, 255, 255);
@@ -328,9 +335,8 @@ export default function ReportPage() {
                             <p className="text-slate-300 text-sm">{lab.phone} · {lab.email}</p>
                             <p className="text-slate-400 text-xs mt-1">License: {lab.license}</p>
                         </div>
-                        <div className="text-left sm:text-right">
-                            <QRPlaceholder text={sample.sample_id} />
-                            <p className="text-slate-400 text-xs mt-1">Scan for verification</p>
+                        <div className="text-left sm:text-right mt-4 sm:mt-0">
+                            <img src="/Lab_Logo.jpg" alt="Lab Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-contain bg-white rounded-lg p-2 shadow-sm" />
                         </div>
                     </div>
                 </div>
