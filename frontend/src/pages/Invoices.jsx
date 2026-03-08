@@ -334,9 +334,14 @@ function InvoiceDetail({ invoice, onClose, onUpdated }) {
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${STATUS_COLORS[status]}`}>{status}</span>
                         </div>
                         <div className="flex flex-col-reverse sm:flex-row justify-between items-center gap-4 pt-2">
-                            <button onClick={handleDownloadPDF} className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium w-full sm:w-auto justify-center">
-                                <Download className="w-4 h-4" /> Download PDF
-                            </button>
+                            <div className="flex items-center gap-4 w-full sm:w-auto">
+                                <button onClick={handleDownloadPDF} className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium w-full sm:w-auto justify-center">
+                                    <Download className="w-4 h-4" /> Download PDF
+                                </button>
+                                <a href={`/invoices/${invoice.id}/print`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium w-full sm:w-auto justify-center">
+                                    <FileText className="w-4 h-4" /> View Invoice
+                                </a>
+                            </div>
                             <button onClick={handleSave} disabled={saving} className="btn-primary py-2 px-5 w-full sm:w-auto justify-center">
                                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />} Update Payment
                             </button>
@@ -486,7 +491,11 @@ export default function Invoices() {
                                                 {inv.payment_status}
                                             </span>
                                         </td>
-                                        <td><ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600" /></td>
+                                        <td>
+                                            <button className="btn-ghost text-xs">
+                                                View <ChevronRight className="w-3 h-3" />
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
