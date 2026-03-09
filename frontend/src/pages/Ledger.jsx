@@ -1,7 +1,9 @@
 import React, { useState, useEffect, Fragment } from 'react';
 import { ledgerAPI, expensesAPI } from '../api/index.js';
-import { BookOpen, Download, Filter, Plus } from 'lucide-react';
+import { BookOpen, Download, Filter, Plus, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useAuth } from '../contexts/AuthContext.jsx';
+import FinancialReportModal from '../components/FinancialReportModal.jsx';
 
 const CATEGORIES = ['All', 'Supplies', 'Equipment', 'Utilities', 'Rent', 'Salaries', 'Maintenance', 'Other'];
 const TYPES = ['All', 'Income', 'Expense'];
@@ -12,6 +14,8 @@ function formatPKR(val) {
 }
 
 export default function Ledger() {
+    const { user } = useAuth();
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
     const [entries, setEntries] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState({ from: '', to: '', type: 'All', category: 'All' });
@@ -117,6 +121,11 @@ export default function Ledger() {
                     </div>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+                    {user?.role === 'admin' && (
+                        <button onClick={() => setIsReportModalOpen(true)} className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 w-full sm:w-auto text-sm font-bold rounded-xl transition-colors shadow-sm hover:opacity-80" style={{ backgroundColor: 'rgba(79,142,247,0.15)', color: '#4f8ef7', border: '1px solid rgba(79,142,247,0.35)' }}>
+                            <FileText className="w-4 h-4" /> Generate Report
+                        </button>
+                    )}
                     <button onClick={() => setIsExpenseModalOpen(true)} className="flex items-center justify-center gap-2 px-4 py-3 sm:py-2 w-full sm:w-auto text-sm font-bold rounded-xl transition-colors shadow-sm hover:opacity-80" style={{ backgroundColor: 'rgba(251,146,60,0.15)', color: '#fb923c', border: '1px solid rgba(251,146,60,0.35)' }}>
                         <Plus className="w-4 h-4" /> Log Expense
                     </button>
@@ -291,6 +300,9 @@ export default function Ledger() {
                     </div>
                 </div>
             )}
+
+            {/* Financial Report Modal */}
+            <FinancialReportModal isOpen={isReportModalOpen} onClose={() => setIsReportModalOpen(false)} />
         </div>
     );
 }
