@@ -42,25 +42,7 @@ export default function ReportPage() {
             doc.setFillColor(30, 42, 74); // Dark blue background matching sidebar (#1E2A4A)
             doc.rect(0, 0, 210, 36, 'F');
 
-            // Load logo
-            let logoBase64 = null;
-            try {
-                const response = await fetch('/Lab_Logo.jpg');
-                const blob = await response.blob();
-                logoBase64 = await new Promise(resolve => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => resolve(reader.result);
-                    reader.readAsDataURL(blob);
-                });
-            } catch (err) {
-                console.error('Failed to load logo for PDF', err);
-            }
 
-            if (logoBase64) {
-                doc.setFillColor(255, 255, 255);
-                doc.roundedRect(172, 6, 24, 24, 2, 2, 'F');
-                doc.addImage(logoBase64, 'JPEG', 174, 8, 20, 20);
-            }
 
             // Header Text (White)
             doc.setTextColor(255, 255, 255);
@@ -70,10 +52,8 @@ export default function ReportPage() {
 
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
-            doc.text(lab.address || '123 Medical Center, Lahore, Pakistan', 14, 20);
-            doc.text(`${lab.phone || '+92-42-3456789'} | ${lab.email || 'info@accutracelabs.com'}`, 14, 25);
-            doc.setTextColor(180, 190, 210); // Slightly dimmed
-            doc.text(`License: ${lab.license || 'LIC-2024-PAK-0123'}`, 14, 31);
+            doc.text('Near Askari Bank, Tramari, Islamabad', 14, 20);
+            doc.text('+92 310 1599399 | info@accutracelabs.com', 14, 25);
 
             // ==========================================
             // PATIENT & SAMPLE DETAILS SECTION
@@ -173,13 +153,12 @@ export default function ReportPage() {
                 // Configure AutoTable
                 autoTable(doc, {
                     startY: currentY,
-                    head: [['Component', 'Value', 'Unit', 'Normal Range', 'Flag']],
+                    head: [['Parameter', 'Result', 'Unit', 'Normal Range']],
                     body: test.components.map(c => [
                         c.component_name,
                         c.value || '—',
                         c.unit || '—',
                         c.normal_text || (c.normal_min !== null && c.normal_max !== null ? `${c.normal_min} – ${c.normal_max}` : '—'),
-                        c.is_abnormal ? '&  A B N O R M A L' : '', // Matching the flag style in right image
                     ]),
                     theme: 'plain', // Use plain to control all borders/colors manually
                     styles: {
@@ -193,11 +172,10 @@ export default function ReportPage() {
                         fontStyle: 'bold'
                     },
                     columnStyles: {
-                        0: { cellWidth: 50 }, // Component Name
-                        1: { cellWidth: 25 }, // Value
-                        2: { cellWidth: 20 }, // Unit
-                        3: { cellWidth: 50 }, // Normal Range
-                        4: { cellWidth: 35 }  // Flag
+                        0: { cellWidth: 60 }, // Component Name
+                        1: { cellWidth: 35 }, // Value
+                        2: { cellWidth: 30 }, // Unit
+                        3: { cellWidth: 55 }  // Normal Range
                     },
                     didParseCell: (data) => {
                         // Alternate row backgrounds (light gray for even rows)
@@ -206,25 +184,11 @@ export default function ReportPage() {
                                 data.cell.styles.fillColor = [248, 249, 250];
                             }
 
-                            // Check if current row has the ABNORMAL flag (index 4)
-                            const isAbnormal = data.row.raw[4] !== '';
-
-                            if (isAbnormal) {
-                                // Red text for value
-                                if (data.column.index === 1) {
-                                    data.cell.styles.textColor = [220, 38, 38];
-                                }
-                                // Red text and flag format
-                                if (data.column.index === 4) {
-                                    data.cell.styles.textColor = [220, 38, 38];
-                                }
+                            // Default dark gray for normal body text, slightly lighter for units/ranges
+                            if (data.column.index === 0 || data.column.index === 1) {
+                                data.cell.styles.textColor = [60, 60, 60];
                             } else {
-                                // Default dark gray for normal body text, slightly lighter for units/ranges
-                                if (data.column.index === 0 || data.column.index === 1) {
-                                    data.cell.styles.textColor = [60, 60, 60];
-                                } else {
-                                    data.cell.styles.textColor = [120, 120, 120];
-                                }
+                                data.cell.styles.textColor = [120, 120, 120];
                             }
                         }
                     },
@@ -331,12 +295,8 @@ export default function ReportPage() {
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                         <div>
                             <h1 className="text-2xl sm:text-3xl font-bold">{lab.name}</h1>
-                            <p className="text-slate-300 text-sm mt-1">{lab.address}</p>
-                            <p className="text-slate-300 text-sm">{lab.phone} · {lab.email}</p>
-                            <p className="text-slate-400 text-xs mt-1">License: {lab.license}</p>
-                        </div>
-                        <div className="text-left sm:text-right mt-4 sm:mt-0">
-                            <img src="/Lab_Logo.jpg" alt="Lab Logo" className="w-20 h-20 sm:w-24 sm:h-24 object-contain bg-white rounded-lg p-2 shadow-sm" />
+                            <p className="text-slate-300 text-sm mt-1">Near Askari Bank, Tramari, Islamabad</p>
+                            <p className="text-slate-300 text-sm">+92 310 1599399 · info@accutracelabs.com</p>
                         </div>
                     </div>
                 </div>
@@ -385,26 +345,18 @@ export default function ReportPage() {
                                             <th className="text-left px-3 py-2 text-xs">Result</th>
                                             <th className="text-left px-3 py-2 text-xs hidden sm:table-cell">Unit</th>
                                             <th className="text-left px-3 py-2 text-xs hidden sm:table-cell">Normal Range</th>
-                                            <th className="text-left px-3 py-2 text-xs">Flag</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {test.components.map((c, i) => (
-                                            <tr key={i} className={`border-b border-slate-100 ${c.is_abnormal ? 'bg-red-50' : i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
+                                            <tr key={i} className={`border-b border-slate-100 ${i % 2 === 0 ? 'bg-white' : 'bg-slate-50/50'}`}>
                                                 <td className="px-3 py-2 font-medium text-slate-500 sticky-col z-10 bg-inherit">{c.component_name}</td>
-                                                <td className={`px-3 py-2 font-semibold ${c.is_abnormal ? 'text-red-600' : 'text-slate-800'}`}>
+                                                <td className="px-3 py-2 font-semibold text-slate-800">
                                                     {c.value || '—'}
                                                 </td>
                                                 <td className="px-3 py-2 text-slate-500 hidden sm:table-cell">{c.unit || '—'}</td>
                                                 <td className="px-3 py-2 text-slate-500 hidden sm:table-cell">
                                                     {c.normal_text || (c.normal_min !== null && c.normal_max !== null ? `${c.normal_min} – ${c.normal_max}` : '—')}
-                                                </td>
-                                                <td className="px-3 py-2">
-                                                    {c.is_abnormal && (
-                                                        <span className="flex items-center gap-1 text-red-600 font-bold text-xs">
-                                                            <AlertTriangle className="w-3 h-3" /> HIGH/LOW
-                                                        </span>
-                                                    )}
                                                 </td>
                                             </tr>
                                         ))}
