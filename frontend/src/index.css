@@ -236,3 +236,6 @@
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
 }
+@media print {
+  .watermark { opacity: 0.055 !important; display: block !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}

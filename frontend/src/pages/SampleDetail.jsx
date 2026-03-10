@@ -295,17 +295,17 @@ export default function SampleDetail() {
             {(canEnterResults || notes || remarks) && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700/50 p-6 space-y-3 flex flex-col">
-                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Internal Notes</h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Private internal remarks. Not visible on patient reports.</p>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">Findings</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">Clinical findings printed on the final patient laboratory report.</p>
                         {canEnterResults ? (
                             <textarea
                                 value={notes}
                                 onChange={(e) => setNotes(e.target.value)}
                                 className="flex-1 w-full min-h-[100px] p-3 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-500 transition-colors resize-y"
-                                placeholder="Enter internal notes for staff here..."
+                                placeholder="Enter clinical findings for the patient here..."
                             />
                         ) : (
-                            <p className="flex-1 text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700/50 whitespace-pre-wrap">{notes || 'No internal notes'}</p>
+                            <p className="flex-1 text-sm text-slate-700 dark:text-slate-300 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-lg border border-slate-100 dark:border-slate-700/50 whitespace-pre-wrap">{notes || 'No findings'}</p>
                         )}
                     </div>
 
