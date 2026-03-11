@@ -238,7 +238,11 @@ export default function ReportPage() {
             });
 
             if (sample.notes) {
-                if (currentY + 20 > 250) { doc.addPage(); drawWatermark(); currentY = 20; }
+                const splitNotes = doc.splitTextToSize(sample.notes, 178);
+                const rectHeight = (splitNotes.length * 5) + 10;
+
+                if (currentY + rectHeight + 20 > 280) { doc.addPage(); drawWatermark(); currentY = 20; }
+
                 doc.setFontSize(10);
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(15, 23, 42); // #0f172a
@@ -250,9 +254,6 @@ export default function ReportPage() {
                 doc.line(14, currentY, 196, currentY);
 
                 currentY += 4;
-                const splitNotes = doc.splitTextToSize(sample.notes, 178);
-                const rectHeight = (splitNotes.length * 5) + 10;
-                
                 doc.setFillColor(248, 250, 252); // #f8fafc
                 doc.setDrawColor(226, 232, 240); // #e2e8f0
                 doc.roundedRect(14, currentY, 182, rectHeight, 2, 2, 'FD');
@@ -266,16 +267,17 @@ export default function ReportPage() {
             }
 
             if (sample.remarks) {
-                if (currentY + 20 > 250) { doc.addPage(); drawWatermark(); currentY = 20; }
+                const splitRemarks = doc.splitTextToSize(sample.remarks, 178);
+                const rectHeight = (splitRemarks.length * 5) + 10;
+
+                if (currentY + rectHeight + 20 > 280) { doc.addPage(); drawWatermark(); currentY = 20; }
+
                 doc.setFontSize(8);
                 doc.setFont('helvetica', 'bold');
                 doc.setTextColor(148, 163, 184); // #94a3b8
                 doc.text('CLINICAL REMARKS', 14, currentY);
 
                 currentY += 4;
-                const splitRemarks = doc.splitTextToSize(sample.remarks, 178);
-                const rectHeight = (splitRemarks.length * 5) + 10;
-                
                 doc.setFillColor(248, 250, 252); // #f8fafc
                 doc.setDrawColor(226, 232, 240); // #e2e8f0
                 doc.roundedRect(14, currentY, 182, rectHeight, 2, 2, 'FD');
@@ -288,20 +290,18 @@ export default function ReportPage() {
                 currentY += rectHeight + 10;
             }
 
-            if (currentY + 30 > 280) { doc.addPage(); drawWatermark(); currentY = 20; }
-
             // Signature (3 columns)
-            currentY += 10;
-            if (currentY + 30 > 280) { doc.addPage(); drawWatermark(); currentY = 20; }
-            doc.setDrawColor(15, 23, 42); // #0f172a
-            doc.setLineWidth(0.5); // equivalent to 1.5px
+            currentY += 12; // margin-top
+
+            if (currentY + 25 > 280) { doc.addPage(); drawWatermark(); currentY = 20 + 12; }
             
-            // Lines
-            doc.line(14, currentY, 60, currentY);     // Col 1 line
-            doc.line(75, currentY, 125, currentY);    // Col 2 line
-            doc.line(135, currentY, 196, currentY);   // Col 3 line
+            // Single border-top separator over entire block
+            doc.setDrawColor(226, 232, 240); // #e2e8f0
+            doc.setLineWidth(0.3); // 1px equivalent
+            doc.line(14, currentY, 196, currentY);
             
-            currentY += 5;
+            currentY += 7; // padding-top
+
             
             doc.setFontSize(8);
             doc.setTextColor(15, 23, 42); // #0f172a
@@ -379,10 +379,10 @@ export default function ReportPage() {
                 </div>
             </div>
 
-            <div ref={printRef} className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden relative" style={{ minHeight: '800px' }}>
+            <div ref={printRef} className="report-body max-w-4xl mx-auto shadow-lg rounded-lg">
                 <img src="/Lab_Logo.png" className="watermark" alt="watermark" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '400px', height: '400px', objectFit: 'contain', opacity: 0.05, pointerEvents: 'none', userSelect: 'none', zIndex: 0 }} />
 
-                <div className="bg-sidebar p-5 sm:p-8 text-white relative z-10">
+                <div className="bg-sidebar p-5 sm:p-8 text-white relative z-10 mb-6" style={{ borderTopLeftRadius: '0.5rem', borderTopRightRadius: '0.5rem' }}>
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                         <div className="flex items-center">
                             <div className="bg-white" style={{ width: '68px', height: '68px', padding: '6px', borderRadius: '12px', boxShadow: '0 4px 16px rgba(0,0,0,0.25)', flexShrink: 0 }}>
@@ -405,8 +405,7 @@ export default function ReportPage() {
                     <div style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'absolute', bottom: 0, left: 0, right: 0 }}></div>
                 </div>
 
-                <div className="p-7 sm:p-[28px] bg-white relative z-10">
-                    <div className="mb-6">
+                    <div className="p-7 sm:p-[28px] bg-white relative z-10 w-full" style={{ flex: '1 0 auto' }}>
                         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
                             <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>Laboratory Report</h2>
                         </div>
@@ -448,19 +447,18 @@ export default function ReportPage() {
                                         <p style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px', margin: 0 }}>Priority</p>
                                         <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', margin: 0 }}>{sample.priority || '—'}</p>
                                     </div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
 
-                    <div className="space-y-[28px]">
-                        {tests.map(test => (
+                    {tests.map(test => (
                             <div key={test.sample_test_id} style={{ marginBottom: '28px' }}>
                                 <div className="flex items-center gap-3" style={{ marginBottom: '8px' }}>
-                                    <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: 0 }}>{test.test_name}</h3>
+                                    <h3 className="section-label" style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: 0 }}>{test.test_name}</h3>
                                     <span style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '5px', padding: '2px 9px', fontWeight: 500 }}>{test.category}</span>
                                 </div>
                                 <div className="overflow-x-auto table-container" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                                    <table className="w-full whitespace-nowrap" style={{ borderCollapse: 'collapse' }}>
+                                    <table className="result-table w-full whitespace-nowrap" style={{ borderCollapse: 'collapse' }}>
                                         <thead>
                                             <tr style={{ background: '#1e293b', color: 'white', fontSize: '12px', fontWeight: 600 }}>
                                                 <th className="text-left" style={{ padding: '11px 16px' }}>Parameter</th>
@@ -489,8 +487,8 @@ export default function ReportPage() {
                         ))}
 
                         {sample.notes && (
-                            <div className="mt-8 pt-4">
-                                <h3 style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>Findings</h3>
+                            <div className="findings-section mt-8 pt-4 relative z-10">
+                                <h3 className="section-label" style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', marginBottom: '8px' }}>Findings</h3>
                                 <div style={{ borderBottom: '1px solid #e2e8f0', marginBottom: '12px' }}></div>
                                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '14px 16px', fontSize: '13px', color: '#334155', lineHeight: '1.7' }} className="whitespace-pre-wrap">
                                     {sample.notes}
@@ -499,16 +497,15 @@ export default function ReportPage() {
                         )}
 
                         {sample.remarks && (
-                            <div className="mt-8 pt-4">
-                                <h3 style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Clinical Remarks</h3>
+                            <div className="remarks-section mt-8 pt-4 relative z-10">
+                                <h3 className="section-label" style={{ fontSize: '11px', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Clinical Remarks</h3>
                                 <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '14px 16px', fontSize: '13px', color: '#334155', lineHeight: '1.65' }} className="whitespace-pre-wrap">
                                     {sample.remarks}
                                 </div>
                             </div>
                         )}
-                    </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '32px', marginTop: '40px', paddingTop: '0' }}>
+                    <div className="signature-footer relative z-10" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '32px', marginTop: '40px', paddingTop: '24px', borderTop: '1px solid #e2e8f0' }}>
                         {/* Col 1 */}
                         <div style={{ paddingTop: '10px' }}>
                             <div style={{ borderTop: '1.5px solid #0f172a', width: '100%', WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}></div>
@@ -532,9 +529,8 @@ export default function ReportPage() {
                             <p style={{ fontSize: '12px', color: '#334155', lineHeight: '1.7', margin: 0 }}>Director – Accu Trace Labs, MBBS</p>
                         </div>
                     </div>
-                </div>
                 
-                <div style={{ background: '#f8fafc', borderTop: '1px solid #e2e8f0', padding: '12px', textAlign: 'center' }} className="relative z-10 w-full mt-auto">
+                <div style={{ background: '#f8fafc', borderTop: '1px solid #e2e8f0', padding: '12px', textAlign: 'center', flexShrink: 0, borderBottomLeftRadius: '0.5rem', borderBottomRightRadius: '0.5rem' }} className="relative z-10 w-full">
                     <p style={{ fontSize: '11px', color: '#94a3b8', fontFamily: 'monospace', margin: 0 }}>This is a computer-generated report · Accu Trace Labs LIMS V1.0</p>
                 </div>
             </div>
