@@ -80,11 +80,15 @@ export default function ReportPage() {
                 textStartX = 46;
             }
 
-            // Header Text
-            doc.setTextColor(255, 255, 255);
+            doc.setTextColor(232, 240, 252); // #e8f0fc
             doc.setFontSize(18);
             doc.setFont('helvetica', 'bold');
-            doc.text(lab.name || 'Accu Trace Labs', textStartX, 16);
+            doc.text('Accu Trace ', textStartX, 16);
+            let offset = doc.getTextWidth('Accu Trace ');
+            doc.setTextColor(79, 142, 247); // #4f8ef7
+            doc.text('Labs', textStartX + offset, 16);
+            
+            doc.setTextColor(255, 255, 255);
             doc.setFontSize(9);
             doc.setFont('helvetica', 'normal');
             doc.text('Near Askari Bank, Tramari, Islamabad', textStartX, 22);
@@ -112,43 +116,50 @@ export default function ReportPage() {
             doc.line(14, 54, 196, 54);
 
             // Grid Details
-            let detailsY = 62;
-            const col1 = 14, col2 = 65, col3 = 115, col4 = 165;
+            let detailsY = 60;
+            const col1X = 18, col2X = 63.5, col3X = 109, col4X = 154.5;
             
+            doc.setDrawColor(226, 232, 240);
+            doc.setLineWidth(0.3);
+            doc.roundedRect(14, 56, 182, 24, 2, 2);
+            doc.line(14, 68, 196, 68);
+            doc.line(59.5, 56, 59.5, 80);
+            doc.line(105, 56, 105, 80);
+            doc.line(150.5, 56, 150.5, 80);
+
             // Row 1
             doc.setFontSize(8);
             doc.setTextColor(148, 163, 184); // #94a3b8
             doc.setFont('helvetica', 'bold');
-            doc.text('PATIENT', col1, detailsY);
-            doc.text('PATIENT ID', col2, detailsY);
-            doc.text('GENDER', col3, detailsY);
-            doc.text('BLOOD GROUP', col4, detailsY);
+            doc.text('PATIENT', col1X, detailsY);
+            doc.text('PATIENT ID', col2X, detailsY);
+            doc.text('GENDER', col3X, detailsY);
+            doc.text('BLOOD GROUP', col4X, detailsY);
 
             doc.setFontSize(10);
             doc.setTextColor(15, 23, 42); // #0f172a
-            doc.text(sample.patient_name || '—', col1, detailsY + 5);
-            doc.text(sample.patient_ref || '—', col2, detailsY + 5);
-            doc.text(sample.gender || '—', col3, detailsY + 5);
-            doc.text(sample.blood_group || '—', col4, detailsY + 5);
+            doc.text(sample.patient_name || '—', col1X, detailsY + 5);
+            doc.text(sample.patient_ref || '—', col2X, detailsY + 5);
+            doc.text(sample.gender || '—', col3X, detailsY + 5);
+            doc.text(sample.blood_group || '—', col4X, detailsY + 5);
 
             // Row 2
             detailsY += 12;
             doc.setFontSize(8);
             doc.setTextColor(148, 163, 184);
-            doc.text('PHONE', col1, detailsY);
-            doc.text('CNIC NUMBER', col2, detailsY);
-            doc.text('REFERRED BY', col3, detailsY);
-            doc.text('PRIORITY', col4, detailsY);
+            doc.text('PHONE', col1X, detailsY);
+            doc.text('CNIC NUMBER', col2X, detailsY);
+            doc.text('REFERRED BY', col3X, detailsY);
+            doc.text('PRIORITY', col4X, detailsY);
 
             doc.setFontSize(10);
             doc.setTextColor(15, 23, 42);
-            doc.text(sample.phone || '—', col1, detailsY + 5);
-            doc.text(sample.cnic || '—', col2, detailsY + 5);
-            doc.text(sample.referring_doctor || '—', col3, detailsY + 5);
-            doc.text(sample.priority || '—', col4, detailsY + 5);
+            doc.text(sample.phone || '—', col1X, detailsY + 5);
+            doc.text(sample.cnic || '—', col2X, detailsY + 5);
+            doc.text(sample.referring_doctor || '—', col3X, detailsY + 5);
+            doc.text(sample.priority || '—', col4X, detailsY + 5);
 
-            doc.line(14, detailsY + 10, 196, detailsY + 10);
-            let currentY = detailsY + 18;
+            let currentY = 92;
 
             tests.forEach((test) => {
                 if (currentY > 250) {
@@ -192,7 +203,8 @@ export default function ReportPage() {
                         if (data.section === 'body') {
                             const isAbnormal = test.components[data.row.index]?.is_abnormal;
                             if (isAbnormal) {
-                                doc.setFillColor(255, 245, 245); // #fff5f5
+                                doc.setFillColor(254, 226, 226); // #fee2e2 (even) or #fff5f5 (odd)
+                                if (data.row.index % 2 !== 0) doc.setFillColor(255, 245, 245);
                                 doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
                             } else if (data.row.index % 2 !== 0) {
                                 doc.setFillColor(248, 250, 252); // #f8fafc
@@ -368,7 +380,7 @@ export default function ReportPage() {
             </div>
 
             <div ref={printRef} className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden relative" style={{ minHeight: '800px' }}>
-                <img src="/Lab_Logo.png" className="watermark" alt="watermark" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '400px', height: '400px', objectFit: 'contain', opacity: 0.055, pointerEvents: 'none', userSelect: 'none', zIndex: 0 }} />
+                <img src="/Lab_Logo.png" className="watermark" alt="watermark" style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '400px', height: '400px', objectFit: 'contain', opacity: 0.05, pointerEvents: 'none', userSelect: 'none', zIndex: 0 }} />
 
                 <div className="bg-sidebar p-5 sm:p-8 text-white relative z-10">
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -378,50 +390,74 @@ export default function ReportPage() {
                             </div>
                             <div style={{ width: '1px', height: '48px', background: 'rgba(255,255,255,0.12)', margin: '0 16px' }} className="hidden sm:block"></div>
                             <div>
-                                <h1 className="text-2xl sm:text-3xl font-bold">{lab.name}</h1>
+                                <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: '#e8f0fc' }}>Accu Trace <span style={{ color: '#4f8ef7' }}>Labs</span></h1>
                                 <p className="text-slate-300 text-sm mt-1">Near Askari Bank, Tramari, Islamabad</p>
                                 <p className="text-slate-300 text-sm">+92 310 1599399 · info@accutracelabs.com</p>
                             </div>
                         </div>
+                        <div className="text-left sm:text-right mt-4 sm:mt-0 flex flex-col items-start sm:items-end">
+                            <p style={{ fontSize: '10px', color: '#3d5878', fontFamily: 'monospace', textTransform: 'uppercase', letterSpacing: '0.12em', margin: 0 }}>Sample ID</p>
+                            <p style={{ fontSize: '20px', fontWeight: 700, color: '#4f8ef7', fontFamily: 'monospace', margin: 0, lineHeight: 1 }}>{sample.sample_id}</p>
+                            <p style={{ fontSize: '10px', color: '#3d5878', fontFamily: 'monospace', marginTop: '4px' }}>Generated: {new Date(generated_at).toLocaleString()}</p>
+                            <div style={{ background: 'rgba(52,211,153,0.12)', border: '1px solid rgba(52,211,153,0.3)', color: '#34d399', fontSize: '11px', fontWeight: 600, borderRadius: '20px', padding: '3px 12px', marginTop: '6px' }}>✓ VERIFIED</div>
+                        </div>
                     </div>
+                    <div style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', position: 'absolute', bottom: 0, left: 0, right: 0 }}></div>
                 </div>
 
                 <div className="p-7 sm:p-[28px] bg-white relative z-10">
                     <div className="mb-6">
                         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-4">
                             <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>Laboratory Report</h2>
-                            <div className="text-left sm:text-right" style={{ fontSize: '12px', color: '#64748b' }}>
-                                <p>Sample ID: <span className="font-mono">{sample.sample_id}</span></p>
-                                <p>Generated: {new Date(generated_at).toLocaleString()}</p>
-                            </div>
                         </div>
                         <div style={{ borderBottom: '1px solid #e2e8f0', marginBottom: '16px' }}></div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 gap-y-6">
-                            {[
-                                { label: 'Patient', value: sample.patient_name },
-                                { label: 'Patient ID', value: sample.patient_ref },
-                                { label: 'Gender', value: sample.gender || '—' },
-                                { label: 'Blood Group', value: sample.blood_group || '—' },
-                                { label: 'Phone', value: sample.phone || '—' },
-                                { label: 'CNIC Number', value: sample.cnic || '—' },
-                                { label: 'Referred By', value: sample.referring_doctor || '—' },
-                                { label: 'Priority', value: sample.priority },
-                            ].map(({ label, value }) => (
-                                <div key={label}>
-                                    <p style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 600, textTransform: 'uppercase' }}>{label}</p>
-                                    <p style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', margin: '4px 0 0 0' }}>{value}</p>
+                        
+                            <div style={{ border: '1px solid #e2e8f0', borderRadius: '10px', overflow: 'hidden', marginBottom: '24px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)' }}>
+                                    {/* Row 1 */}
+                                    <div style={{ padding: '12px 16px', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+                                        <p style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px', margin: 0 }}>Patient</p>
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', margin: 0 }}>{sample.patient_name || '—'}</p>
+                                    </div>
+                                    <div style={{ padding: '12px 16px', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+                                        <p style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px', margin: 0 }}>Patient ID</p>
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', margin: 0 }}>{sample.patient_ref || '—'}</p>
+                                    </div>
+                                    <div style={{ padding: '12px 16px', borderRight: '1px solid #e2e8f0', borderBottom: '1px solid #e2e8f0' }}>
+                                        <p style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px', margin: 0 }}>Gender</p>
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', margin: 0 }}>{sample.gender || '—'}</p>
+                                    </div>
+                                    <div style={{ padding: '12px 16px', borderBottom: '1px solid #e2e8f0' }}>
+                                        <p style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px', margin: 0 }}>Blood Group</p>
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', margin: 0 }}>{sample.blood_group || '—'}</p>
+                                    </div>
+                                    {/* Row 2 */}
+                                    <div style={{ padding: '12px 16px', borderRight: '1px solid #e2e8f0' }}>
+                                        <p style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px', margin: 0 }}>Phone</p>
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', margin: 0 }}>{sample.phone || '—'}</p>
+                                    </div>
+                                    <div style={{ padding: '12px 16px', borderRight: '1px solid #e2e8f0' }}>
+                                        <p style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px', margin: 0 }}>CNIC Number</p>
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', margin: 0 }}>{sample.cnic || '—'}</p>
+                                    </div>
+                                    <div style={{ padding: '12px 16px', borderRight: '1px solid #e2e8f0' }}>
+                                        <p style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px', margin: 0 }}>Referred By</p>
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', margin: 0 }}>{sample.referring_doctor || '—'}</p>
+                                    </div>
+                                    <div style={{ padding: '12px 16px' }}>
+                                        <p style={{ fontSize: '11px', fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px', margin: 0 }}>Priority</p>
+                                        <p style={{ fontSize: '13px', fontWeight: 600, color: '#0f172a', margin: 0 }}>{sample.priority || '—'}</p>
+                                    </div>
                                 </div>
-                            ))}
+                            </div>
                         </div>
-                        <div style={{ borderBottom: '1px solid #e2e8f0', marginTop: '16px' }}></div>
-                    </div>
 
-                    <div className="space-y-[24px]">
+                    <div className="space-y-[28px]">
                         {tests.map(test => (
-                            <div key={test.sample_test_id} style={{ marginBottom: '24px' }}>
-                                <div className="flex items-center gap-3" style={{ marginBottom: '10px' }}>
+                            <div key={test.sample_test_id} style={{ marginBottom: '28px' }}>
+                                <div className="flex items-center gap-3" style={{ marginBottom: '8px' }}>
                                     <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', margin: 0 }}>{test.test_name}</h3>
-                                    <span style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '5px', padding: '2px 9px' }}>{test.category}</span>
+                                    <span style={{ fontSize: '11px', color: '#64748b', background: '#f1f5f9', border: '1px solid #e2e8f0', borderRadius: '5px', padding: '2px 9px', fontWeight: 500 }}>{test.category}</span>
                                 </div>
                                 <div className="overflow-x-auto table-container" style={{ borderRadius: '8px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
                                     <table className="w-full whitespace-nowrap" style={{ borderCollapse: 'collapse' }}>
@@ -435,7 +471,7 @@ export default function ReportPage() {
                                         </thead>
                                         <tbody>
                                             {test.components.map((c, i) => (
-                                                <tr key={i} style={{ background: c.is_abnormal ? '#fff5f5' : (i % 2 === 0 ? 'white' : '#f8fafc'), borderBottom: 'none' }}>
+                                                <tr key={i} style={{ background: c.is_abnormal ? (i % 2 === 0 ? '#fff5f5' : '#fee2e2') : (i % 2 === 0 ? 'white' : '#f8fafc'), borderBottom: 'none' }}>
                                                     <td className="font-medium" style={{ padding: '11px 16px', fontSize: '13px', color: '#1e293b', fontWeight: 500 }}>{c.component_name}</td>
                                                     <td style={{ padding: '11px 16px', fontSize: '13px', fontWeight: 700, color: c.is_abnormal ? '#ef4444' : '#1e293b' }}>
                                                         {c.value || '—'}
@@ -515,3 +551,5 @@ export default function ReportPage() {
         </div>
     );
 }
+
+
