@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { invoicesAPI, labSettingsAPI } from '../api/index.js';
-import { Search, FileText, Loader2, X, ChevronRight, Download, CreditCard, Save } from 'lucide-react';
+import { Search, FileText, Loader2, X, ChevronRight, Download, CreditCard, Save, AlertTriangle, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LabLoader from '../components/LabLoader.jsx';
 
@@ -10,11 +10,13 @@ const STATUS_COLORS = {
     Paid: 'bg-emerald-50 text-emerald-700 border-emerald-200/50 dark:bg-emerald-500/10 dark:text-emerald-400 dark:border-emerald-500/20',
 };
 
-function InvoiceDetail({ invoice, onClose, onUpdated }) {
+function InvoiceDetail({ invoice, onClose, onUpdated, onDeleted }) {
     const [amountPaid, setAmountPaid] = useState(invoice.amount_paid || 0);
     const [paymentMethod, setPaymentMethod] = useState(invoice.payment_method || 'Cash');
     const [items, setItems] = useState([]);
     const [saving, setSaving] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
         invoicesAPI.get(invoice.id).then(({ data }) => {
@@ -248,7 +250,12 @@ function InvoiceDetail({ invoice, onClose, onUpdated }) {
             <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-slate-200 dark:border-slate-700">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-700">
                     <h2 className="text-lg font-semibold flex items-center gap-2 text-slate-900 dark:text-white"><FileText className="w-5 h-5 text-blue-600 dark:text-blue-400" /> {invoice.invoice_number}</h2>
-                    <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"><X className="w-5 h-5 text-slate-400 dark:text-slate-500" /></button>
+                    <div className="flex items-center gap-2">
+                        <button onClick={() => setShowDeleteConfirm(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 rounded-lg transition-colors">
+                            <Trash2 className="w-4 h-4" /> Delete
+                        </button>
+                        <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"><X className="w-5 h-5 text-slate-400 dark:text-slate-500" /></button>
+                    </div>
                 </div>
 
                 <div className="p-6 space-y-6">
@@ -349,6 +356,51 @@ function InvoiceDetail({ invoice, onClose, onUpdated }) {
                     </div>
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700/50 w-full max-w-md p-6">
+                        <div className="flex flex-col items-center text-center space-y-4">
+                            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center mb-1">
+                                <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Delete Invoice</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                    Are you sure you want to permanently delete invoice <strong className="text-slate-700 dark:text-slate-300">{invoice.invoice_number}</strong>? This cannot be undone.
+                                </p>
+                            </div>
+                            <div className="flex w-full gap-3 pt-4">
+                                <button
+                                    onClick={() => setShowDeleteConfirm(false)}
+                                    className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-semibold rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        setDeleting(true);
+                                        try {
+                                            await invoicesAPI.delete(invoice.id);
+                                            toast.success('Invoice deleted permanently');
+                                            setShowDeleteConfirm(false);
+                                            if (onDeleted) onDeleted();
+                                        } catch (err) {
+                                            toast.error(err.response?.data?.error || 'Delete failed');
+                                        } finally { setDeleting(false); }
+                                    }}
+                                    disabled={deleting}
+                                    className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-500 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    Delete Permanently
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
@@ -504,7 +556,7 @@ export default function Invoices() {
                 )}
             </div>
 
-            {selected && <InvoiceDetail invoice={selected} onClose={() => setSelected(null)} onUpdated={() => { setSelected(null); load(); }} />}
+            {selected && <InvoiceDetail invoice={selected} onClose={() => setSelected(null)} onUpdated={() => { setSelected(null); load(); }} onDeleted={() => { setSelected(null); load(); }} />}
         </div>
     );
 }

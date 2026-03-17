@@ -7,8 +7,9 @@ import toast from 'react-hot-toast';
 import LabLoader from '../components/LabLoader.jsx';
 
 function ResultRow({ component, sampleTestId, value, isAbnormal, onChange, disabled }) {
-    const hasNormalRange = component.normal_min !== null || component.normal_max !== null || component.normal_text;
-    const normalDisplay = component.normal_text || (component.normal_min !== null && component.normal_max !== null
+    const isText = component.result_type === 'text';
+    const hasNormalRange = isText ? !!component.normal_text : (component.normal_min !== null || component.normal_max !== null);
+    const normalDisplay = isText ? component.normal_text : (component.normal_min !== null && component.normal_max !== null
         ? `${component.normal_min} – ${component.normal_max}` : '');
 
     return (
@@ -16,13 +17,14 @@ function ResultRow({ component, sampleTestId, value, isAbnormal, onChange, disab
             <td className="sticky-col px-5 py-4 font-medium text-slate-700 dark:text-slate-300">{component.component_name}</td>
             <td className="px-5 py-4">
                 <input
+                    type={isText ? "text" : "number"}
                     className={`w-full px-3 py-1.5 rounded-md border text-sm transition-colors focus:outline-none focus:ring-2 disabled:opacity-50
                     ${isAbnormal
                             ? 'border-red-300 dark:border-red-500/50 bg-red-50 dark:bg-red-500/10 text-red-900 dark:text-red-200 focus:ring-red-200 dark:focus:ring-red-500/30'
                             : 'border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900/50 text-slate-900 dark:text-slate-100 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-500'}`}
                     value={value || ''}
                     onChange={e => onChange(sampleTestId, component.id, e.target.value)}
-                    placeholder="Text result"
+                    placeholder={isText ? "e.g. Negative" : "0.00"}
                     disabled={disabled}
                 />
             </td>
@@ -260,7 +262,6 @@ export default function SampleDetail() {
                 <div className="h-6"></div>
             </div>
 
-            {/* Patient & Visit Card */}
             <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700/50 p-6 space-y-4">
                 <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-2">Patient & Visit</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 text-sm gap-y-4 gap-x-8">
@@ -268,6 +269,12 @@ export default function SampleDetail() {
                         <span className="text-slate-500 dark:text-slate-400 w-24">Patient:</span>
                         <span className="font-semibold text-slate-900 dark:text-slate-100">{sample.patient_name}</span>
                     </div>
+                    {sample.guardian_name && (
+                        <div className="flex gap-2">
+                            <span className="text-slate-500 dark:text-slate-400 w-24">S/O or W/O:</span>
+                            <span className="font-semibold text-slate-900 dark:text-slate-100">{sample.guardian_name}</span>
+                        </div>
+                    )}
                     <div className="flex gap-2">
                         <span className="text-slate-500 dark:text-slate-400 w-24">Patient ID:</span>
                         <span className="font-semibold text-slate-900 dark:text-slate-100">{sample.patient_ref}</span>
@@ -281,8 +288,8 @@ export default function SampleDetail() {
                         <span className="font-semibold text-slate-900 dark:text-slate-100">{sample.referring_doctor || '—'}</span>
                     </div>
                     <div className="flex gap-2">
-                        <span className="text-slate-500 dark:text-slate-400 w-24">Gender/DOB:</span>
-                        <span className="font-semibold text-slate-900 dark:text-slate-100">{sample.gender || '—'} · {sample.dob ? new Date(sample.dob).toLocaleDateString() : '—'}</span>
+                        <span className="text-slate-500 dark:text-slate-400 w-24">Gender/Age:</span>
+                        <span className="font-semibold text-slate-900 dark:text-slate-100">{sample.gender || '—'} · {sample.age != null ? `${sample.age} years` : '—'}</span>
                     </div>
                     <div className="flex gap-2">
                         <span className="text-slate-500 dark:text-slate-400 w-24">CNIC:</span>
@@ -375,12 +382,17 @@ export default function SampleDetail() {
                                                 const currentVal = results[key] !== undefined ? results[key] : (c.value || '');
 
                                                 let isAbn = false;
-                                                const num = parseFloat(currentVal);
-                                                if (currentVal !== '' && !isNaN(num)) {
-                                                    if (c.normal_min !== null && num < parseFloat(c.normal_min)) isAbn = true;
-                                                    if (c.normal_max !== null && num > parseFloat(c.normal_max)) isAbn = true;
-                                                } else if (c.normal_text && currentVal && currentVal.toLowerCase() !== c.normal_text.toLowerCase()) {
-                                                    isAbn = true;
+                                                const val = currentVal.trim();
+                                                if (val) {
+                                                    if (c.result_type === 'text') {
+                                                        if (c.normal_text && val.toLowerCase() !== c.normal_text.toLowerCase()) isAbn = true;
+                                                    } else {
+                                                        const num = parseFloat(val);
+                                                        if (!isNaN(num)) {
+                                                            if (c.normal_min !== null && num < parseFloat(c.normal_min)) isAbn = true;
+                                                            if (c.normal_max !== null && num > parseFloat(c.normal_max)) isAbn = true;
+                                                        }
+                                                    }
                                                 }
                                                 return (
                                                     <ResultRow

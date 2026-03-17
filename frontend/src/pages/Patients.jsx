@@ -1,15 +1,19 @@
 import { useEffect, useState, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { patientsAPI, samplesAPI } from '../api/index.js';
-import { Plus, Search, User, ChevronRight, Loader2, X } from 'lucide-react';
+import { Plus, Search, User, ChevronRight, Loader2, X, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import LabLoader from '../components/LabLoader.jsx';
+import { useAuth } from '../contexts/AuthContext.jsx';
 
-const EMPTY_FORM = { name: '', dob: '', gender: 'Male', phone: '', email: '', address: '', blood_group: '', cnic: '', referring_doctor: '' };
+const EMPTY_FORM = { name: '', age: '', gender: 'Male', phone: '', email: '', address: '', cnic: '', referring_doctor: '', guardian_name: '' };
 
-function PatientModal({ patient, onClose, onSaved }) {
-    const [form, setForm] = useState(patient ? { ...patient, dob: patient.dob ? patient.dob.split('T')[0] : '' } : EMPTY_FORM);
+function PatientModal({ patient, onClose, onSaved, onDeleted }) {
+    const { user } = useAuth();
+    const [form, setForm] = useState(patient ? { ...patient } : EMPTY_FORM);
     const [loading, setLoading] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -22,6 +26,19 @@ function PatientModal({ patient, onClose, onSaved }) {
         } catch (err) {
             toast.error(err.response?.data?.error || 'Failed');
         } finally { setLoading(false); }
+    };
+
+    const handleDelete = async () => {
+        setDeleting(true);
+        try {
+            await patientsAPI.delete(patient.id);
+            toast.success('Patient deleted permanently');
+            setShowDeleteConfirm(false);
+            if (onDeleted) onDeleted();
+            else onSaved();
+        } catch (err) {
+            toast.error(err.response?.data?.error || 'Delete failed');
+        } finally { setDeleting(false); }
     };
 
     return (
@@ -37,9 +54,13 @@ function PatientModal({ patient, onClose, onSaved }) {
                             <label className="label">Full Name *</label>
                             <input className="input" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required />
                         </div>
+                        <div className="md:col-span-2">
+                            <label className="label">S/O or W/O</label>
+                            <input className="input" value={form.guardian_name || ''} onChange={e => setForm(p => ({ ...p, guardian_name: e.target.value }))} placeholder="e.g. Muhammad Sajid" />
+                        </div>
                         <div>
-                            <label className="label">Date of Birth</label>
-                            <input type="date" className="input" value={form.dob} onChange={e => setForm(p => ({ ...p, dob: e.target.value }))} />
+                            <label className="label">Age</label>
+                            <input type="number" className="input" min="0" max="150" value={form.age || ''} onChange={e => setForm(p => ({ ...p, age: e.target.value }))} placeholder="e.g. 25" />
                         </div>
                         <div>
                             <label className="label">Gender</label>
@@ -50,13 +71,6 @@ function PatientModal({ patient, onClose, onSaved }) {
                         <div>
                             <label className="label">Phone</label>
                             <input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+92-300-..." />
-                        </div>
-                        <div>
-                            <label className="label">Blood Group</label>
-                            <select className="input" value={form.blood_group} onChange={e => setForm(p => ({ ...p, blood_group: e.target.value }))}>
-                                <option value="">— Select —</option>
-                                {['A+', 'A-', 'B+', 'B-', 'O+', 'O-', 'AB+', 'AB-'].map(g => <option key={g}>{g}</option>)}
-                            </select>
                         </div>
                         <div>
                             <label className="label">Email</label>
@@ -75,20 +89,66 @@ function PatientModal({ patient, onClose, onSaved }) {
                             <textarea className="input" rows={2} value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} />
                         </div>
                     </div>
-                    <div className="flex justify-end gap-3 pt-2">
-                        <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
-                        <button type="submit" disabled={loading} className="btn-primary">
-                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                            {patient ? 'Update' : 'Register Patient'}
-                        </button>
+                    <div className="flex items-center justify-between pt-2">
+                        <div>
+                            {patient && user.role === 'admin' && (
+                                <button type="button" onClick={() => setShowDeleteConfirm(true)} className="px-4 py-2 text-sm font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-500/10 rounded-lg transition-colors">
+                                    Delete Patient
+                                </button>
+                            )}
+                        </div>
+                        <div className="flex gap-3">
+                            <button type="button" onClick={onClose} className="btn-secondary">Cancel</button>
+                            <button type="submit" disabled={loading} className="btn-primary">
+                                {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                                {patient ? 'Update' : 'Register Patient'}
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700/50 w-full max-w-md p-6">
+                        <div className="flex flex-col items-center text-center space-y-4">
+                            <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-500/20 flex items-center justify-center mb-1">
+                                <AlertTriangle className="w-6 h-6 text-red-600 dark:text-red-400" />
+                            </div>
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Delete Patient</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                    Are you sure you want to permanently delete <strong className="text-slate-700 dark:text-slate-300">{patient.name}</strong> and all their records? This cannot be undone.
+                                </p>
+                            </div>
+                            <div className="flex w-full gap-3 pt-4">
+                                <button
+                                    onClick={() => setShowDeleteConfirm(false)}
+                                    className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-sm font-semibold rounded-lg transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={handleDelete}
+                                    disabled={deleting}
+                                    className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-500 text-white text-sm font-semibold rounded-lg shadow-sm transition-colors flex items-center justify-center gap-2"
+                                >
+                                    {deleting && <Loader2 className="w-4 h-4 animate-spin" />}
+                                    Delete Permanently
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
 
 export default function Patients() {
+    const { user } = useAuth();
+    const navigate = useNavigate();
     const [patients, setPatients] = useState([]);
     const [total, setTotal] = useState(0);
     const [search, setSearch] = useState('');
@@ -218,17 +278,15 @@ export default function Patients() {
                     <div className="table-container">
                         <table className="table">
                             <thead><tr>
-                                <th>Patient ID</th><th className="sticky-col">Name</th><th>Age/Gender</th><th>Blood Group</th><th>Phone</th><th>Registered</th><th></th>
+                                <th>Patient ID</th><th className="sticky-col">Name</th><th>Age/Gender</th><th>Phone</th><th>Registered</th><th></th>
                             </tr></thead>
                             <tbody>
                                 {patients.map(p => {
-                                    const age = p.dob ? Math.floor((Date.now() - new Date(p.dob)) / 31557600000) : null;
                                     return (
                                         <tr key={p.id}>
                                             <td><span className="font-mono text-[13px] text-slate-800 dark:text-slate-200 font-medium">{p.patient_id}</span></td>
                                             <td className="sticky-col"><div className="font-medium text-slate-800 dark:text-slate-200">{p.name}</div><div className="text-xs text-slate-400">{p.email}</div></td>
-                                            <td className="text-sm">{age !== null ? `${age}yr` : '—'} / {p.gender || '—'}</td>
-                                            <td>{p.blood_group ? <span className="badge bg-red-50 text-red-600 dark:bg-red-500/10 dark:text-red-400 border-red-200/50 dark:border-red-500/20">{p.blood_group}</span> : '—'}</td>
+                                            <td className="text-sm">{p.age !== null && p.age !== undefined ? `${p.age}yr` : '—'} / {p.gender || '—'}</td>
                                             <td className="text-sm">{p.phone || '—'}</td>
                                             <td className="text-xs text-slate-400">{new Date(p.created_at).toLocaleDateString()}</td>
                                             <td>
@@ -253,6 +311,7 @@ export default function Patients() {
                     patient={modal === 'new' ? null : modal}
                     onClose={() => setModal(null)}
                     onSaved={() => { setModal(null); load(); }}
+                    onDeleted={() => { setModal(null); load(); navigate('/patients'); }}
                 />
             )}
         </div>

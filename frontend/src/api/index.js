@@ -50,6 +50,7 @@ export const patientsAPI = {
     getTimeline: (id) => api.get(`/patients/${id}/timeline`),
     create: (data) => api.post('/patients', data),
     update: (id, data) => api.put(`/patients/${id}`, data),
+    delete: (id) => api.delete(`/patients/${id}`),
 };
 
 // ---- Tests ----
@@ -94,6 +95,7 @@ export const invoicesAPI = {
     list: (params) => api.get('/invoices', { params }),
     get: (id) => api.get(`/invoices/${id}`),
     updatePayment: (id, data) => api.put(`/invoices/${id}/payment`, data),
+    delete: (id) => api.delete(`/invoices/${id}`),
     stats: () => api.get('/invoices/stats/dashboard'),
     analytics: (params) => api.get('/invoices/analytics', { params }),
 };

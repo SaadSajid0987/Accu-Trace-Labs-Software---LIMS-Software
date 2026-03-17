@@ -289,4 +289,29 @@ router.put('/:id/payment', async (req, res) => {
     } catch (err) { console.error('Invoice payment error:', err); res.status(500).json({ error: 'Internal server error' }); }
 });
 
+// DELETE /api/invoices/:id — permanently delete invoice (Admin only)
+router.delete('/:id', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) return res.status(400).json({ error: 'Invalid invoice ID' });
+
+        const { rows: [invoice] } = await client.query('SELECT * FROM invoices WHERE id=$1', [id]);
+        if (!invoice) return res.status(404).json({ error: 'Invoice not found' });
+
+        await client.query('BEGIN');
+        await client.query('DELETE FROM invoice_items WHERE invoice_id=$1', [id]);
+        await client.query('DELETE FROM invoices WHERE id=$1', [id]);
+        await client.query('COMMIT');
+
+        res.json({ message: 'Invoice deleted permanently' });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Invoice delete error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    } finally {
+        client.release();
+    }
+});
+
 export default router;

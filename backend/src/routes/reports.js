@@ -13,7 +13,7 @@ router.get('/:sampleId', requireRole('admin', 'pathologist'), async (req, res) =
 
         const { rows: [sample] } = await pool.query(
             `SELECT s.*, 
-        p.name as patient_name, p.patient_id as patient_ref, p.gender, p.dob, p.blood_group, p.phone, p.cnic, p.referring_doctor,
+        p.name as patient_name, p.patient_id as patient_ref, p.gender, p.dob, p.blood_group, p.phone, p.cnic, p.referring_doctor, p.age, p.guardian_name,
         u.name as ordered_by_name,
         v.name as verified_by_name, v.email as verified_by_email
        FROM samples s

@@ -43,11 +43,12 @@ function NewSampleModal({ onClose, onSaved }) {
         if (form.test_ids.length === 0) return toast.error('Select at least one test');
         setLoading(true);
         try {
-            const discPercent = Math.min(100, Math.max(0, parseFloat(discountAmount) || 0));
-            const calcDiscount = Math.round(subtotal * discPercent / 100);
+            const disc = Math.max(0, Math.min(parseFloat(discountAmount) || 0, subtotal));
+            const discPercent = subtotal > 0 ? Math.round((disc / subtotal) * 100) : 0;
+            
             await samplesAPI.create({
                 ...form,
-                discount_amount: calcDiscount,
+                discount_amount: disc,
                 discount_reason: discountReason ? `${discPercent}% — ${discountReason}` : `${discPercent}%`,
                 payment_method: paymentMethod,
                 amount_paid: parseFloat(amountPaid) || 0,
@@ -62,8 +63,8 @@ function NewSampleModal({ onClose, onSaved }) {
     // Real-time invoice calculations
     const selectedTests = tests.filter(t => form.test_ids.includes(t.id));
     const subtotal = selectedTests.reduce((s, t) => s + parseFloat(t.price || 0), 0);
-    const discPercent = Math.min(100, Math.max(0, parseFloat(discountAmount) || 0));
-    const disc = Math.round(subtotal * discPercent / 100);
+    const disc = Math.max(0, Math.min(parseFloat(discountAmount) || 0, subtotal));
+    const discPercent = subtotal > 0 ? Math.round((disc / subtotal) * 100) : 0;
     const netPayable = Math.max(0, subtotal - disc);
     const paid = parseFloat(amountPaid) || 0;
     const balanceDue = Math.max(0, netPayable - paid);
@@ -198,8 +199,11 @@ function NewSampleModal({ onClose, onSaved }) {
                             {/* Adjustments row */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Discount (%)</label>
-                                    <input type="number" min="0" max="100" className="input text-xs py-1.5" value={discountAmount} onChange={e => setDiscountAmount(e.target.value)} placeholder="0" />
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="block text-xs font-medium text-slate-500 dark:text-slate-400">Discount (PKR)</label>
+                                        {discPercent > 0 && <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 px-1.5 rounded">{discPercent}% OFF</span>}
+                                    </div>
+                                    <input type="number" min="0" max={subtotal} className="input text-xs py-1.5" value={discountAmount} onChange={e => setDiscountAmount(e.target.value)} placeholder="Enter amount..." />
                                 </div>
                                 <div>
                                     <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Discount Reason</label>

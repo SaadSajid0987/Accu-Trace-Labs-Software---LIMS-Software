@@ -59,9 +59,9 @@ router.post('/', requireRole('admin'), async (req, res) => {
         for (let i = 0; i < components.length; i++) {
             const c = components[i];
             await client.query(
-                `INSERT INTO test_components (test_id, component_name, unit, normal_min, normal_max, normal_text, sort_order)
-         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-                [test.id, c.component_name, c.unit || null, c.normal_min || null, c.normal_max || null, c.normal_text || null, i]
+                `INSERT INTO test_components (test_id, component_name, unit, normal_min, normal_max, normal_text, sort_order, result_type)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+                [test.id, c.component_name, c.unit || null, c.normal_min || null, c.normal_max || null, c.normal_text || null, i, c.result_type || 'numeric']
             );
         }
         await client.query('COMMIT');
@@ -112,16 +112,16 @@ router.put('/:id', requireRole('admin'), async (req, res) => {
             if (c.id) {
                 // Update existing component in-place
                 await client.query(
-                    `UPDATE test_components SET component_name=$1, unit=$2, normal_min=$3, normal_max=$4, normal_text=$5, sort_order=$6
-                     WHERE id=$7`,
-                    [c.component_name, c.unit || null, c.normal_min || null, c.normal_max || null, c.normal_text || null, i, c.id]
+                    `UPDATE test_components SET component_name=$1, unit=$2, normal_min=$3, normal_max=$4, normal_text=$5, sort_order=$6, result_type=$7
+                     WHERE id=$8`,
+                    [c.component_name, c.unit || null, c.normal_min || null, c.normal_max || null, c.normal_text || null, i, c.result_type || 'numeric', c.id]
                 );
             } else {
                 // Insert new component
                 await client.query(
-                    `INSERT INTO test_components (test_id, component_name, unit, normal_min, normal_max, normal_text, sort_order)
-                     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-                    [test.id, c.component_name, c.unit || null, c.normal_min || null, c.normal_max || null, c.normal_text || null, i]
+                    `INSERT INTO test_components (test_id, component_name, unit, normal_min, normal_max, normal_text, sort_order, result_type)
+                     VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+                    [test.id, c.component_name, c.unit || null, c.normal_min || null, c.normal_max || null, c.normal_text || null, i, c.result_type || 'numeric']
                 );
             }
         }

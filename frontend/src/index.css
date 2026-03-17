@@ -443,17 +443,27 @@
   overflow: visible; /* important — do not clip content */
 }
 
+.report-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 85vh;
+  padding: 28px 28px 40px 28px;
+  overflow: visible !important;
+}
+
+.signature-footer {
+  padding: 20px 0 28px 0;
+  overflow: visible !important;
+  width: 100%;
+}
+
 @media print {
-  .report-body {
-    padding: 0;
+  .report-content {
+    min-height: auto;
   }
 
-  .signature-footer {
-    page-break-inside: avoid;
-    break-inside: avoid;
-    page-break-before: avoid;
-    break-before: avoid;
-    margin-top: 32px;
+  .report-body {
+    padding: 0;
   }
 
   .section-label {
@@ -468,9 +478,5 @@
   .result-table tr {
     page-break-inside: avoid;
     break-inside: avoid;
-  }
-
-  @page {
-    margin: 18mm 14mm;
   }
 }

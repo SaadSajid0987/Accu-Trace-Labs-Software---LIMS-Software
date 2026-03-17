@@ -43,12 +43,12 @@ router.get('/', requireRole('admin', 'pathologist'), async (req, res) => {
 // POST /api/patients
 router.post('/', requireRole('admin'), async (req, res) => {
     try {
-        const { name, dob, gender, phone, email, address, blood_group, cnic, referring_doctor } = req.body;
+        const { name, age, gender, phone, email, address, cnic, referring_doctor, guardian_name } = req.body;
         if (!name || !name.trim()) return res.status(400).json({ error: 'Patient name is required' });
         const { rows } = await pool.query(
-            `INSERT INTO patients (name, dob, gender, phone, email, address, blood_group, cnic, referring_doctor)
+            `INSERT INTO patients (name, age, gender, phone, email, address, cnic, referring_doctor, guardian_name)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-            [name.trim(), dob || null, gender || null, phone || null, email || null, address || null, blood_group || null, cnic || null, referring_doctor || null]
+            [name.trim(), age ? parseInt(age) : null, gender || null, phone || null, email || null, address || null, cnic || null, referring_doctor || null, guardian_name || null]
         );
         await logAudit('patients', rows[0].id, null, null, rows[0].patient_id, 'INSERT', req.user.id);
         res.status(201).json(rows[0]);
@@ -93,13 +93,13 @@ router.put('/:id', requireRole('admin'), async (req, res) => {
         const id = parseInt(req.params.id);
         if (isNaN(id)) return res.status(400).json({ error: 'Invalid patient ID' });
 
-        const { name, dob, gender, phone, email, address, blood_group, cnic, referring_doctor } = req.body;
+        const { name, age, gender, phone, email, address, cnic, referring_doctor, guardian_name } = req.body;
         if (!name || !name.trim()) return res.status(400).json({ error: 'Patient name is required' });
 
         const { rows } = await pool.query(
-            `UPDATE patients SET name=$1, dob=$2, gender=$3, phone=$4, email=$5,
-       address=$6, blood_group=$7, cnic=$8, referring_doctor=$9, updated_at=NOW() WHERE id=$10 RETURNING *`,
-            [name.trim(), dob || null, gender, phone, email, address, blood_group, cnic || null, referring_doctor || null, id]
+            `UPDATE patients SET name=$1, age=$2, gender=$3, phone=$4, email=$5,
+       address=$6, cnic=$7, referring_doctor=$8, guardian_name=$9, updated_at=NOW() WHERE id=$10 RETURNING *`,
+            [name.trim(), age ? parseInt(age) : null, gender, phone, email, address, cnic || null, referring_doctor || null, guardian_name || null, id]
         );
         if (!rows[0]) return res.status(404).json({ error: 'Patient not found' });
         await logAudit('patients', id, null, null, JSON.stringify(req.body), 'UPDATE', req.user.id);
@@ -187,6 +187,69 @@ router.get('/:id/timeline', requireRole('admin', 'pathologist', 'technician'), a
     } catch (err) {
         console.error('Patient timeline error:', err);
         res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
+// DELETE /api/patients/:id — permanently delete patient and all associated records (Admin only)
+router.delete('/:id', requireRole('admin'), async (req, res) => {
+    const client = await pool.connect();
+    try {
+        const id = parseInt(req.params.id);
+        if (isNaN(id)) return res.status(400).json({ error: 'Invalid patient ID' });
+
+        const { rows: [patient] } = await client.query('SELECT * FROM patients WHERE id=$1', [id]);
+        if (!patient) return res.status(404).json({ error: 'Patient not found' });
+
+        await client.query('BEGIN');
+
+        // Get all sample IDs for this patient
+        const { rows: samples } = await client.query('SELECT id FROM samples WHERE patient_id=$1', [id]);
+        const sampleIds = samples.map(s => s.id);
+
+        if (sampleIds.length > 0) {
+            // Delete test_results via sample_tests
+            await client.query(
+                `DELETE FROM test_results WHERE sample_test_id IN (SELECT id FROM sample_tests WHERE sample_id = ANY($1::int[]))`,
+                [sampleIds]
+            );
+            // Delete sample_tests
+            await client.query('DELETE FROM sample_tests WHERE sample_id = ANY($1::int[])', [sampleIds]);
+            // Delete invoice_items via invoices
+            await client.query(
+                `DELETE FROM invoice_items WHERE invoice_id IN (SELECT id FROM invoices WHERE sample_id = ANY($1::int[]))`,
+                [sampleIds]
+            );
+            // Delete invoices
+            await client.query('DELETE FROM invoices WHERE sample_id = ANY($1::int[])', [sampleIds]);
+            // Delete samples
+            await client.query('DELETE FROM samples WHERE patient_id=$1', [id]);
+        }
+
+        // Delete any invoices linked directly to patient_id (not via sample)
+        await client.query(
+            `DELETE FROM invoice_items WHERE invoice_id IN (SELECT id FROM invoices WHERE patient_id=$1)`,
+            [id]
+        );
+        await client.query('DELETE FROM invoices WHERE patient_id=$1', [id]);
+
+        // Delete patient portal links
+        await client.query(
+            `DELETE FROM patient_portal_links WHERE patient_name=$1`,
+            [patient.name]
+        );
+
+        // Delete the patient
+        await client.query('DELETE FROM patients WHERE id=$1', [id]);
+
+        await client.query('COMMIT');
+        await logAudit('patients', id, null, patient.patient_id, null, 'DELETE', req.user.id);
+        res.json({ message: 'Patient and all associated records deleted permanently' });
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Patient delete error:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    } finally {
+        client.release();
     }
 });
 

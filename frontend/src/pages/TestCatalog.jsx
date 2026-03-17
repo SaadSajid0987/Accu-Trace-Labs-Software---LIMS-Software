@@ -5,7 +5,7 @@ import { Plus, ChevronDown, ChevronUp, Edit2, Trash2, X, Loader2, FlaskConical, 
 import toast from 'react-hot-toast';
 import LabLoader from '../components/LabLoader.jsx';
 
-const EMPTY_COMP = { component_name: '', unit: '', normal_min: '', normal_max: '', normal_text: '' };
+const EMPTY_COMP = { component_name: '', unit: '', normal_min: '', normal_max: '', normal_text: '', result_type: 'numeric' };
 
 const CATEGORY_COLORS = {
     'Biochemistry': { text: 'text-[#38bdf8]', bg: 'bg-[#38bdf8]/15', border: 'border-[#38bdf8]/50', hex: '#38bdf8', glow: 'shadow-[0_0_10px_rgba(56,189,248,0.4)]' },
@@ -131,24 +131,36 @@ function TestModal({ test, type, onClose, onSaved }) {
 
                     {isIndividual ? (
                         <>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
                                     <label className="label">Unit</label>
                                     <input className="input" placeholder="e.g. g/dL" value={indComp.unit} onChange={e => setIndComp('unit', e.target.value)} />
                                 </div>
                                 <div>
-                                    <label className="label">Min Value</label>
-                                    <input type="number" className="input" placeholder="0.0" value={indComp.normal_min || ''} onChange={e => setIndComp('normal_min', e.target.value)} />
+                                    <label className="label">Result Type</label>
+                                    <select className="input" value={indComp.result_type || 'numeric'} onChange={e => { setIndComp('result_type', e.target.value); if (e.target.value === 'text') { setIndComp('normal_min', ''); setIndComp('normal_max', ''); } else { setIndComp('normal_text', ''); } }}>
+                                        <option value="numeric">Numeric (Min/Max)</option>
+                                        <option value="text">Text (Normal Value)</option>
+                                    </select>
                                 </div>
+                            </div>
+                            {(indComp.result_type || 'numeric') === 'numeric' ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="label">Min Value</label>
+                                        <input type="number" className="input" placeholder="0.0" value={indComp.normal_min || ''} onChange={e => setIndComp('normal_min', e.target.value)} />
+                                    </div>
+                                    <div>
+                                        <label className="label">Max Value</label>
+                                        <input type="number" className="input" placeholder="10.0" value={indComp.normal_max || ''} onChange={e => setIndComp('normal_max', e.target.value)} />
+                                    </div>
+                                </div>
+                            ) : (
                                 <div>
-                                    <label className="label">Max Value</label>
-                                    <input type="number" className="input" placeholder="10.0" value={indComp.normal_max || ''} onChange={e => setIndComp('normal_max', e.target.value)} />
+                                    <label className="label">Normal Value (e.g. Negative, Non-Reactive)</label>
+                                    <input className="input" placeholder="e.g. Negative" value={indComp.normal_text || ''} onChange={e => setIndComp('normal_text', e.target.value)} />
                                 </div>
-                            </div>
-                            <div>
-                                <label className="label">Normal Text (e.g. Negative)</label>
-                                <input className="input" placeholder="Negative" value={indComp.normal_text || ''} onChange={e => setIndComp('normal_text', e.target.value)} />
-                            </div>
+                            )}
                         </>
                     ) : (
                         <div>
@@ -159,8 +171,8 @@ function TestModal({ test, type, onClose, onSaved }) {
                             <div className="space-y-2">
                                 <div className="hidden sm:grid sm:grid-cols-12 gap-2 text-xs font-medium text-slate-500 px-1">
                                     <span className="col-span-3">Component</span><span className="col-span-2">Unit</span>
-                                    <span className="col-span-2">Min</span><span className="col-span-2">Max</span>
-                                    <span className="col-span-2">Normal Text</span><span className="col-span-1"></span>
+                                    <span className="col-span-2">Result Type</span><span className="col-span-2">Min / Max / Normal</span>
+                                    <span className="col-span-2"></span><span className="col-span-1"></span>
                                 </div>
                                 {form.components.map((c, i) => (
                                     <div key={i} className="flex flex-col sm:grid sm:grid-cols-12 gap-2 items-start sm:items-center relative bg-slate-50 sm:bg-transparent dark:bg-slate-800/50 sm:dark:bg-transparent p-3 sm:p-0 rounded-lg sm:rounded-none border sm:border-0 border-slate-200 dark:border-slate-700">
@@ -173,17 +185,29 @@ function TestModal({ test, type, onClose, onSaved }) {
                                             <input className="input text-xs" placeholder="g/dL" value={c.unit || ''} onChange={e => updateComp(i, 'unit', e.target.value)} />
                                         </div>
                                         <div className="w-full sm:col-span-2">
-                                            <label className="sm:hidden text-xs font-semibold text-slate-500 mb-1 block">Min Value</label>
-                                            <input type="number" className="input text-xs" placeholder="12.0" value={c.normal_min || ''} onChange={e => updateComp(i, 'normal_min', e.target.value)} />
+                                            <label className="sm:hidden text-xs font-semibold text-slate-500 mb-1 block">Result Type</label>
+                                            <select className="input text-xs" value={c.result_type || 'numeric'} onChange={e => { updateComp(i, 'result_type', e.target.value); if (e.target.value === 'text') { updateComp(i, 'normal_min', ''); updateComp(i, 'normal_max', ''); } else { updateComp(i, 'normal_text', ''); } }}>
+                                                <option value="numeric">Numeric</option>
+                                                <option value="text">Text</option>
+                                            </select>
                                         </div>
-                                        <div className="w-full sm:col-span-2">
-                                            <label className="sm:hidden text-xs font-semibold text-slate-500 mb-1 block">Max Value</label>
-                                            <input type="number" className="input text-xs" placeholder="17.5" value={c.normal_max || ''} onChange={e => updateComp(i, 'normal_max', e.target.value)} />
-                                        </div>
-                                        <div className="w-full sm:col-span-2">
-                                            <label className="sm:hidden text-xs font-semibold text-slate-500 mb-1 block">Normal Text</label>
-                                            <input className="input text-xs" placeholder="Negative" value={c.normal_text || ''} onChange={e => updateComp(i, 'normal_text', e.target.value)} />
-                                        </div>
+                                        {(c.result_type || 'numeric') === 'numeric' ? (
+                                            <>
+                                                <div className="w-full sm:col-span-2">
+                                                    <label className="sm:hidden text-xs font-semibold text-slate-500 mb-1 block">Min Value</label>
+                                                    <input type="number" className="input text-xs" placeholder="12.0" value={c.normal_min || ''} onChange={e => updateComp(i, 'normal_min', e.target.value)} />
+                                                </div>
+                                                <div className="w-full sm:col-span-2">
+                                                    <label className="sm:hidden text-xs font-semibold text-slate-500 mb-1 block">Max Value</label>
+                                                    <input type="number" className="input text-xs" placeholder="17.5" value={c.normal_max || ''} onChange={e => updateComp(i, 'normal_max', e.target.value)} />
+                                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="w-full sm:col-span-4">
+                                                <label className="sm:hidden text-xs font-semibold text-slate-500 mb-1 block">Normal Value</label>
+                                                <input className="input text-xs" placeholder="e.g. Negative" value={c.normal_text || ''} onChange={e => updateComp(i, 'normal_text', e.target.value)} />
+                                            </div>
+                                        )}
                                         <button type="button" onClick={() => removeComp(i)} className="sm:col-span-1 absolute sm:relative top-2 right-2 sm:top-auto sm:right-auto text-slate-400 hover:text-red-500 p-1 bg-white sm:bg-transparent dark:bg-slate-700 sm:dark:bg-transparent rounded sm:rounded-none border sm:border-0 border-slate-200 dark:border-transparent">
                                             <Trash2 className="w-4 h-4" />
                                         </button>

@@ -94,7 +94,8 @@ router.post('/', requireRole('admin'), async (req, res) => {
 
         // 4. Calculate totals
         const subtotal = tests.reduce((s, t) => s + parseFloat(t.price || 0), 0);
-        const disc = parseFloat(discount_amount) || 0;
+        const disc = Math.max(0, Math.min(parseFloat(discount_amount) || 0, subtotal));
+        const discPercentage = subtotal > 0 ? Math.round((disc / subtotal) * 10000) / 100 : 0;
         const netPayable = Math.max(0, subtotal - disc);
         const paid = parseFloat(amount_paid) || 0;
         const balanceDue = Math.max(0, netPayable - paid);
@@ -103,10 +104,10 @@ router.post('/', requireRole('admin'), async (req, res) => {
         // 5. Create invoice
         const { rows: [invoice] } = await client.query(
             `INSERT INTO invoices (sample_id, patient_name_snapshot, referring_doctor_snapshot,
-                subtotal, discount_amount, discount_reason, net_payable, amount_paid, balance_due, payment_method, payment_status)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+                subtotal, discount_amount, discount_percentage, discount_reason, net_payable, amount_paid, balance_due, payment_method, payment_status)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
             [sample.id, patient?.name, patient?.referring_doctor,
-                subtotal, disc, discount_reason, netPayable, paid, balanceDue, payment_method, paymentStatus]
+                subtotal, disc, discPercentage, discount_reason || '', netPayable, paid, balanceDue, payment_method, paymentStatus]
         );
 
         // 6. Create invoice items
@@ -162,7 +163,7 @@ router.get('/:id', async (req, res) => {
         const id = parseInt(req.params.id);
         if (isNaN(id)) return res.status(400).json({ error: 'Invalid sample ID' });
         const { rows: [sample] } = await pool.query(
-            `SELECT s.*, p.name as patient_name, p.patient_id as patient_ref, p.gender, p.dob, p.blood_group, p.cnic, p.referring_doctor,
+            `SELECT s.*, p.name as patient_name, p.patient_id as patient_ref, p.gender, p.dob, p.blood_group, p.cnic, p.referring_doctor, p.age, p.guardian_name,
         u.name as ordered_by_name, v.name as verified_by_name
        FROM samples s
        LEFT JOIN patients p ON s.patient_id = p.id
