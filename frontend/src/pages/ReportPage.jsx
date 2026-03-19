@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { reportsAPI } from '../api/index.js';
 import { Printer, Download, ArrowLeft, Loader2, Share2 } from 'lucide-react';
@@ -31,126 +31,241 @@ export default function ReportPage() {
         toast.loading('Generating PDF...', { id: 'pdf-toast' });
 
         try {
-            await document.fonts.ready;
+            const { sample, tests, generated_at } = data;
 
-            const { default: jsPDF } = await import('jspdf');
-            const { default: html2canvas } = await import('html2canvas');
+            const toBase64 = async (url) => {
+                const res = await fetch(url);
+                const blob = await res.blob();
+                return new Promise((resolve) => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => resolve(reader.result);
+                    reader.readAsDataURL(blob);
+                });
+            };
 
-            // ── Build a clean off-screen clone ──────────────────────────────
-            const A4_WIDTH = 794;
+            const [flaskLogo, labLogo] = await Promise.all([
+                toBase64('/flask_lab_logo_1.png'),
+                toBase64('/Lab_Logo.png'),
+            ]);
 
-            const clone = printRef.current.cloneNode(true);
+            const patientCells = [
+                { label: 'PATIENT', value: sample.patient_name || '—', sub: sample.guardian_name ? `S/O ${sample.guardian_name}` : null },
+                { label: 'PATIENT ID', value: sample.patient_ref || '—' },
+                { label: 'GENDER', value: sample.gender || '—' },
+                { label: 'AGE', value: sample.age != null ? `${sample.age} years` : '—' },
+                { label: 'PHONE', value: sample.phone || '—' },
+                { label: 'CNIC NUMBER', value: sample.cnic || '—' },
+                { label: 'REFERRED BY', value: sample.referring_doctor || '—' },
+                { label: 'PRIORITY', value: sample.priority || '—' },
+            ];
 
-            // Outer wrapper — strip ALL decoration
-            clone.style.cssText = `
-                position: fixed;
-                left: -9999px;
-                top: 0;
-                width: ${A4_WIDTH}px;
-                height: auto;
-                min-height: unset;
-                max-height: unset;
-                overflow: visible;
-                box-shadow: none;
-                border: none;
-                border-radius: 0;
-                background: #ffffff;
-                padding: 0;
-                margin: 0;
-                display: block;
-            `;
+            const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Inter, Arial, sans-serif; background: white; color: #0f172a; font-size: 13px; }
 
-            // Kill flex spacer
-            const spacer = clone.querySelector('.report-flex-spacer');
-            if (spacer) spacer.remove();
+  .header { padding: 20px 36px 18px 36px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #0f172a; }
+  .lab-name { font-size: 32px; font-weight: 800; color: #0f172a; letter-spacing: -0.02em; line-height: 1; }
+  .lab-name span { color: #0ea5e9; }
+  .logo-box { width: 90px; height: 90px; border: 2px solid #e2e8f0; border-radius: 10px; padding: 6px; display: flex; align-items: center; justify-content: center; }
+  .logo-box img { width: 100%; height: 100%; object-fit: contain; }
 
-            // Kill any element with viewport-relative min-height
-            clone.querySelectorAll('*').forEach(el => {
-                const s = el.style;
-                if (s.minHeight && s.minHeight.includes('vh')) s.minHeight = '0';
-                if (s.flex === '1' || s.flex === '1 1 0%') {
-                    s.flex = 'none';
-                    s.minHeight = '0';
-                }
-                s.boxShadow = 'none';
+  .title-row { padding: 16px 36px 12px 36px; display: flex; align-items: flex-start; justify-content: space-between; border-bottom: 1px solid #e2e8f0; }
+  .report-title { font-size: 20px; font-weight: 800; color: #0f172a; }
+  .title-meta { text-align: right; font-size: 12px; color: #64748b; font-family: monospace; line-height: 1.75; }
+  .title-meta strong { color: #0f172a; font-weight: 600; }
+
+  .patient-section { padding: 16px 36px; border-bottom: 1px solid #e2e8f0; }
+  .patient-grid { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; }
+  .patient-cell { padding: 11px 14px; border-right: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+  .patient-cell:nth-child(4n) { border-right: none; }
+  .patient-cell.last-row { border-bottom: none; }
+  .cell-label { font-size: 10px; font-weight: 600; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3px; }
+  .cell-value { font-size: 13px; font-weight: 600; color: #0f172a; }
+  .cell-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+
+  .content { padding: 20px 36px; position: relative; }
+  .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 380px; height: 380px; object-fit: contain; opacity: 0.05; pointer-events: none; z-index: 0; }
+
+  .section-wrap { margin-bottom: 24px; position: relative; z-index: 1; page-break-inside: avoid; }
+  .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; page-break-after: avoid; }
+  .section-name { font-size: 15px; font-weight: 700; color: #0f172a; }
+  .category-pill { font-size: 11px; color: #64748b; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 5px; padding: 2px 8px; font-weight: 500; }
+
+  .result-table { width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
+  .result-table thead tr { background: #1e293b; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .result-table thead th { padding: 10px 16px; text-align: left; font-size: 12px; font-weight: 600; color: #e2e8f0; }
+  .result-table tbody tr { border-bottom: 1px solid #f1f5f9; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .result-table tbody tr:last-child { border-bottom: none; }
+  .result-table tbody tr.even { background: #f8fafc; }
+  .result-table tbody tr.odd { background: #ffffff; }
+  .result-table tbody tr.abnormal { background: #fff5f5 !important; }
+  .result-table tbody td { padding: 10px 16px; font-size: 13px; color: #475569; }
+  .result-table tbody td.param { color: #0f172a; font-weight: 500; }
+  .result-table tbody td.result-val { font-weight: 700; color: #0f172a; }
+  .result-table tbody td.abnormal-val { font-weight: 700; color: #ef4444; }
+  .result-table tbody td.range { font-family: monospace; font-size: 11px; color: #64748b; }
+
+  .block { margin-bottom: 18px; position: relative; z-index: 1; page-break-inside: avoid; }
+  .block-label { font-size: 12px; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.08em; padding-bottom: 6px; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; }
+  .block-text { font-size: 13px; color: #334155; line-height: 1.7; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; white-space: pre-wrap; }
+
+  .signature-block { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; margin-top: 40px; padding-bottom: 24px; page-break-inside: avoid; position: relative; z-index: 1; }
+  .sig-line { border-top: 1.5px solid #0f172a; margin-bottom: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .sig-name { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
+  .sig-role { font-size: 12px; color: #334155; line-height: 1.7; }
+  .sig-extra { font-size: 11px; color: #64748b; }
+
+  .footer { padding: 14px 36px; border-top: 2px solid #0f172a; display: flex; align-items: center; justify-content: space-between; background: white; page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .footer-address { font-size: 11px; color: #475569; line-height: 1.7; }
+  .footer-address strong { font-size: 12px; font-weight: 700; color: #0f172a; display: block; }
+  .footer-generated { text-align: right; font-size: 11px; color: #64748b; font-family: monospace; line-height: 1.7; }
+
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="lab-name">Accu Trace <span>Labs</span></div>
+  <div class="logo-box"><img src="${flaskLogo}" alt="Logo" /></div>
+</div>
+
+<div class="title-row">
+  <div class="report-title">Laboratory Report</div>
+  <div class="title-meta">
+    Sample ID: <strong>${sample.sample_id}</strong><br/>
+    Generated: <strong>${new Date(generated_at).toLocaleString()}</strong>
+  </div>
+</div>
+
+<div class="patient-section">
+  <div class="patient-grid">
+    ${patientCells.map((cell, i) => `
+      <div class="patient-cell ${i >= 4 ? 'last-row' : ''}">
+        <div class="cell-label">${cell.label}</div>
+        <div class="cell-value">${cell.value}</div>
+        ${cell.sub ? `<div class="cell-sub">${cell.sub}</div>` : ''}
+      </div>
+    `).join('')}
+  </div>
+</div>
+
+<div class="content">
+  <img class="watermark" src="${labLogo}" alt="" />
+
+  ${tests.map(test => `
+    <div class="section-wrap">
+      <div class="section-header">
+        <span class="section-name">${test.test_name}</span>
+        <span class="category-pill">${test.category}</span>
+      </div>
+      <table class="result-table">
+        <thead>
+          <tr>
+            <th style="width:38%">Parameter</th>
+            <th style="width:17%">Result</th>
+            <th style="width:17%">Unit</th>
+            <th style="width:28%">Normal Range</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${test.components.map((c, i) => `
+            <tr class="${c.is_abnormal ? 'abnormal' : (i % 2 === 0 ? 'odd' : 'even')}">
+              <td class="param">${c.component_name}</td>
+              <td class="${c.is_abnormal ? 'abnormal-val' : 'result-val'}">${c.value || '—'}</td>
+              <td>${c.unit || '—'}</td>
+              <td class="range">${c.normal_text || (c.normal_min != null && c.normal_max != null ? `${c.normal_min} – ${c.normal_max}` : '—')}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `).join('')}
+
+  ${sample.notes ? `
+    <div class="block">
+      <div class="block-label">Findings</div>
+      <div class="block-text">${sample.notes}</div>
+    </div>
+  ` : ''}
+
+  ${sample.remarks ? `
+    <div class="block">
+      <div class="block-label">Clinical Remarks</div>
+      <div class="block-text">${sample.remarks}</div>
+    </div>
+  ` : ''}
+
+  <div class="signature-block">
+    <div class="sig-col">
+      <div class="sig-line"></div>
+      <div class="sig-name">Muhammad Tallal Sajid</div>
+      <div class="sig-role">CEO / Microbiologist</div>
+      <div class="sig-role">Accu Trace Labs (Pvt) Ltd</div>
+    </div>
+    <div class="sig-col">
+      <div class="sig-line"></div>
+      <div class="sig-name">Dr. Rabbia Khalid Latif</div>
+      <div class="sig-role">Consultant Pathologist</div>
+      <div class="sig-role">M.Phil Haematology</div>
+      <div class="sig-extra">PMDC Reg No: 57687-P</div>
+    </div>
+    <div class="sig-col">
+      <div class="sig-line"></div>
+      <div class="sig-name">Dr. Sajid Latif</div>
+      <div class="sig-role">Consultant Physician</div>
+      <div class="sig-role">Director – Accu Trace Labs, MBBS</div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <div class="footer-address">
+    <strong>Accu Trace Labs (Pvt) Ltd</strong>
+    Near Askari Bank, Tramari, Islamabad<br/>
+    +92 310 1599399 · info@accutracelabs.com
+  </div>
+  <div class="footer-generated">
+    This is a computer-generated report<br/>
+    Accu Trace Labs LIMS V1.0
+  </div>
+</div>
+
+</body>
+</html>`;
+
+            const response = await fetch('http://localhost:3002/generate-pdf', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    html,
+                    filename: `AccuTrace-Report-${sample.sample_id}`,
+                }),
             });
 
-            // Ensure signature block is fully visible
-            const sig = clone.querySelector('.signature-footer');
-            if (sig) {
-                sig.style.display = 'grid';
-                sig.style.gridTemplateColumns = '1fr 1fr 1fr';
-                sig.style.gap = '32px';
-                sig.style.marginTop = '40px';
-                sig.style.paddingTop = '0';
-                sig.style.paddingBottom = '32px';
-                sig.style.width = '100%';
-                sig.style.boxSizing = 'border-box';
-                sig.style.pageBreakInside = 'avoid';
-            }
+            if (!response.ok) throw new Error('PDF server error');
 
-            // Ensure footer bar visible
-            const footerBar = clone.querySelector('.report-footer-bar');
-            if (footerBar) {
-                footerBar.style.display = 'flex';
-                footerBar.style.paddingBottom = '24px';
-            }
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `AccuTrace-Report-${sample.sample_id}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
 
-            // Add padding so last element never clips
-            clone.style.paddingBottom = '48px';
-
-            document.body.appendChild(clone);
-
-            // Let browser reflow
-            await new Promise(r => setTimeout(r, 400));
-
-            const captureHeight = clone.scrollHeight;
-
-            const canvas = await html2canvas(clone, {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-                backgroundColor: '#ffffff',
-                logging: false,
-                width: A4_WIDTH,
-                height: captureHeight,
-                windowWidth: A4_WIDTH,
-                scrollX: 0,
-                scrollY: 0,
-            });
-
-            document.body.removeChild(clone);
-
-            // ── Build PDF ────────────────────────────────────────────────────
-            const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true });
-            const pdfW = pdf.internal.pageSize.getWidth();   // 210mm
-            const pdfH = pdf.internal.pageSize.getHeight();  // 297mm
-            const margin = 0; // full bleed
-
-            const imgW = pdfW - margin * 2;
-            const imgH = (canvas.height * imgW) / canvas.width;
-            const imgData = canvas.toDataURL('image/jpeg', 1.0);
-
-            let heightLeft = imgH;
-            let yPos = margin;
-            let page = 0;
-
-            pdf.addImage(imgData, 'JPEG', margin, yPos, imgW, imgH);
-            heightLeft -= pdfH;
-
-            while (heightLeft > 0) {
-                page++;
-                pdf.addPage();
-                pdf.addImage(imgData, 'JPEG', margin, -(pdfH * page) + margin, imgW, imgH);
-                heightLeft -= pdfH;
-            }
-
-            pdf.save(`AccuTrace-Report-${data.sample.sample_id}.pdf`);
             toast.success('PDF downloaded!', { id: 'pdf-toast' });
 
         } catch (err) {
             console.error('PDF error:', err);
-            toast.error('Failed to generate PDF', { id: 'pdf-toast' });
+            toast.error('PDF server not running. Start it with: cd pdf-server && node server.js', { id: 'pdf-toast' });
         } finally {
             setPdfGenerating(false);
         }
