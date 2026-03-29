@@ -93,16 +93,16 @@ export default function ReportPage() {
 
   .content { padding: 20px 36px; position: relative; }
   .watermark {
-    position: absolute;
+    position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: 380px;
-    height: 380px;
+    width: 320px;
+    height: 320px;
     object-fit: contain;
-    opacity: 0.05;
+    opacity: 0.035;
     pointer-events: none;
-    z-index: 0;
+    z-index: -1;
   }
 
   .section-wrap { margin-bottom: 24px; position: relative; z-index: 1; page-break-inside: avoid; }
@@ -143,10 +143,7 @@ export default function ReportPage() {
   .sig-role { font-size: 12px; color: #334155; line-height: 1.7; }
   .sig-extra { font-size: 11px; color: #64748b; }
 
-  .footer { padding: 14px 36px; border-top: 2px solid #0f172a; display: flex; align-items: center; justify-content: space-between; background: white; page-break-inside: avoid; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .footer-address { font-size: 11px; color: #475569; line-height: 1.7; }
-  .footer-address strong { font-size: 12px; font-weight: 700; color: #0f172a; display: block; }
-  .footer-generated { text-align: right; font-size: 11px; color: #64748b; font-family: monospace; line-height: 1.7; }
+
 
   @media print {
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
@@ -157,6 +154,7 @@ export default function ReportPage() {
 </style>
 </head>
 <body>
+<img class="watermark" src="${labLogo}" alt="" />
 
 <div class="header">
   <div class="lab-name">Accu Trace <span>Labs</span></div>
@@ -184,7 +182,6 @@ export default function ReportPage() {
 </div>
 
 <div class="content">
-  <img class="watermark" src="${labLogo}" alt="" />
 
   ${tests.map(test => `
     <div class="section-wrap">
@@ -249,18 +246,6 @@ export default function ReportPage() {
       <div class="sig-role">Consultant Physician</div>
       <div class="sig-role">Director – Accu Trace Labs, MBBS</div>
     </div>
-  </div>
-</div>
-
-<div class="footer">
-  <div class="footer-address">
-    <strong>Accu Trace Labs (Pvt) Ltd</strong>
-    Near Askari Bank, Tramari, Islamabad<br/>
-    +92 310 1599399 · info@accutracelabs.com
-  </div>
-  <div class="footer-generated">
-    This is a computer-generated report<br/>
-    Accu Trace Labs LIMS V1.0
   </div>
 </div>
 

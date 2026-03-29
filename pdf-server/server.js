@@ -40,14 +40,40 @@ app.post('/generate-pdf', async (req, res) => {
     const pdf = await page.pdf({
       format: 'A4',
       printBackground: true,
-      preferCSSPageSize: true,
       margin: {
         top: '10mm',
-        bottom: '10mm',
+        bottom: '30mm',
         left: '10mm',
         right: '10mm',
       },
-      displayHeaderFooter: false,
+      displayHeaderFooter: true,
+      headerTemplate: `<span></span>`,
+      footerTemplate: `
+        <div style="
+          width: 100%;
+          margin: 0 10mm;
+          padding-top: 10px;
+          border-top: 2px solid #0f172a;
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          font-size: 10px;
+          font-family: Arial, sans-serif;
+          color: #475569;
+          box-sizing: border-box;
+          -webkit-print-color-adjust: exact;
+        ">
+          <div style="line-height: 1.7;">
+            <span style="font-size: 11px; font-weight: 700; color: #0f172a; display: block;">Accu Trace Labs (Pvt) Ltd</span>
+            Near Askari Bank, Tramari, Islamabad<br/>
+            +92 310 1599399 &middot; info@accutracelabs.com
+          </div>
+          <div style="text-align: right; color: #64748b; font-family: monospace; line-height: 1.7;">
+            This is a computer-generated report<br/>
+            Accu Trace Labs LIMS V1.0
+          </div>
+        </div>
+      `,
     });
 
     await browser.close();
