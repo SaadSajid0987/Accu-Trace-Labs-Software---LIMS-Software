@@ -91,7 +91,8 @@ export default function ReportPage() {
   .cell-value { font-size: 13px; font-weight: 600; color: #0f172a; }
   .cell-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
 
-  .content { padding: 20px 36px; position: relative; }
+  .content { padding: 20px 36px; position: relative; display: flex; flex-direction: column; }
+  .signature-spacer { flex: 1; min-height: 570px; }
   .watermark {
     position: fixed;
     top: 50%;
@@ -226,6 +227,7 @@ export default function ReportPage() {
     </div>
   ` : ''}
 
+  <div class="signature-spacer"></div>
   <div class="signature-block">
     <div class="sig-col">
       <div class="sig-line"></div>
