@@ -49,15 +49,18 @@ export default function PatientPortal() {
         <div className="bg-gradient-to-r from-slate-800 via-slate-900 to-slate-800 text-white px-6 py-8 sm:px-8">
             <div className="max-w-3xl mx-auto">
                 <div className="flex items-start gap-4">
-                    {labLogo && (
+                    <div className="w-14 h-14 bg-white border border-slate-700 rounded-xl overflow-hidden shadow-sm flex items-center justify-center p-1.5 grayscale-0 group hover:grayscale-0 transition-all">
                         <img
-                            src={labLogo.startsWith('http') ? labLogo : `${window.location.origin}${labLogo}`}
-                            alt="Logo" className="w-14 h-14 object-contain rounded-lg bg-white/10 p-1"
+                            src={labLogo ? (labLogo.startsWith('http') ? labLogo : `http://localhost:3001${labLogo}`) : '/flask_lab_logo_1.png'}
+                            alt="Logo" className="w-full h-full object-contain"
+                            onError={(e) => { e.target.src = '/flask_lab_logo_1.png'; }}
                         />
-                    )}
+                    </div>
                     <div className="flex-1">
-                        <h1 className="text-xl sm:text-2xl font-bold tracking-tight">{labName}</h1>
-                        {labTagline && <p className="text-slate-300 text-sm mt-0.5">{labTagline}</p>}
+                        <h1 className="text-xl sm:text-2xl font-black tracking-tight flex items-center gap-2 italic">
+                            {labName} <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                        </h1>
+                        {labTagline && <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.2em] mt-0.5">{labTagline}</p>}
                     </div>
                 </div>
                 <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-xs text-slate-400">

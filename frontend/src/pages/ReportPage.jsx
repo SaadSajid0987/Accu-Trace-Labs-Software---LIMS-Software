@@ -64,7 +64,11 @@ export default function ReportPage() {
 <head>
 <meta charset="UTF-8">
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: auto !important;
+    margin: 0;
+    padding: 0;
+  }
   body { font-family: Inter, Arial, sans-serif; background: white; color: #0f172a; font-size: 13px; }
 
   .header { padding: 20px 36px 18px 36px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #0f172a; }
@@ -88,7 +92,18 @@ export default function ReportPage() {
   .cell-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
 
   .content { padding: 20px 36px; position: relative; }
-  .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 380px; height: 380px; object-fit: contain; opacity: 0.05; pointer-events: none; z-index: 0; }
+  .watermark {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 380px;
+    height: 380px;
+    object-fit: contain;
+    opacity: 0.05;
+    pointer-events: none;
+    z-index: 0;
+  }
 
   .section-wrap { margin-bottom: 24px; position: relative; z-index: 1; page-break-inside: avoid; }
   .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; page-break-after: avoid; }
@@ -113,7 +128,16 @@ export default function ReportPage() {
   .block-label { font-size: 12px; font-weight: 700; color: #0f172a; text-transform: uppercase; letter-spacing: 0.08em; padding-bottom: 6px; margin-bottom: 8px; border-bottom: 1px solid #e2e8f0; }
   .block-text { font-size: 13px; color: #334155; line-height: 1.7; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; white-space: pre-wrap; }
 
-  .signature-block { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 28px; margin-top: 40px; padding-bottom: 24px; page-break-inside: avoid; position: relative; z-index: 1; }
+  .signature-block {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 28px;
+    margin-top: 40px;
+    padding-bottom: 0;
+    page-break-inside: avoid;
+    position: relative;
+    z-index: 1;
+  }
   .sig-line { border-top: 1.5px solid #0f172a; margin-bottom: 8px; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .sig-name { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 2px; }
   .sig-role { font-size: 12px; color: #334155; line-height: 1.7; }
@@ -126,6 +150,9 @@ export default function ReportPage() {
 
   @media print {
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  }
+  @page:last {
+    size: auto;
   }
 </style>
 </head>
