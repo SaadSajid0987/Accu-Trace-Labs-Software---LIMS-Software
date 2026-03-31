@@ -21,7 +21,7 @@ router.get('/', requireRole('admin', 'pathologist'), async (req, res) => {
         let query, params;
         if (search) {
             query = `SELECT * FROM patients WHERE 
-        name ILIKE $1 OR patient_id ILIKE $1 OR phone ILIKE $1 OR email ILIKE $1
+        name ILIKE $1 OR patient_id ILIKE $1 OR phone ILIKE $1
         ORDER BY created_at DESC LIMIT $2 OFFSET $3`;
             params = [`%${search}%`, limit, offset];
         } else {
@@ -43,12 +43,12 @@ router.get('/', requireRole('admin', 'pathologist'), async (req, res) => {
 // POST /api/patients
 router.post('/', requireRole('admin'), async (req, res) => {
     try {
-        const { name, age, gender, phone, email, address, cnic, referring_doctor, guardian_name } = req.body;
+        const { name, age, gender, phone, cnic, referring_doctor, guardian_name } = req.body;
         if (!name || !name.trim()) return res.status(400).json({ error: 'Patient name is required' });
         const { rows } = await pool.query(
-            `INSERT INTO patients (name, age, gender, phone, email, address, cnic, referring_doctor, guardian_name)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
-            [name.trim(), age ? parseInt(age) : null, gender || null, phone || null, email || null, address || null, cnic || null, referring_doctor || null, guardian_name || null]
+            `INSERT INTO patients (name, age, gender, phone, cnic, referring_doctor, guardian_name)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+            [name.trim(), age ? parseInt(age) : null, gender || null, phone || null, cnic || null, referring_doctor || null, guardian_name || null]
         );
         await logAudit('patients', rows[0].id, null, null, rows[0].patient_id, 'INSERT', req.user.id);
         res.status(201).json(rows[0]);
@@ -93,13 +93,13 @@ router.put('/:id', requireRole('admin'), async (req, res) => {
         const id = parseInt(req.params.id);
         if (isNaN(id)) return res.status(400).json({ error: 'Invalid patient ID' });
 
-        const { name, age, gender, phone, email, address, cnic, referring_doctor, guardian_name } = req.body;
+        const { name, age, gender, phone, cnic, referring_doctor, guardian_name } = req.body;
         if (!name || !name.trim()) return res.status(400).json({ error: 'Patient name is required' });
 
         const { rows } = await pool.query(
-            `UPDATE patients SET name=$1, age=$2, gender=$3, phone=$4, email=$5,
-       address=$6, cnic=$7, referring_doctor=$8, guardian_name=$9, updated_at=NOW() WHERE id=$10 RETURNING *`,
-            [name.trim(), age ? parseInt(age) : null, gender, phone, email, address, cnic || null, referring_doctor || null, guardian_name || null, id]
+            `UPDATE patients SET name=$1, age=$2, gender=$3, phone=$4,
+       cnic=$5, referring_doctor=$6, guardian_name=$7, updated_at=NOW() WHERE id=$8 RETURNING *`,
+            [name.trim(), age ? parseInt(age) : null, gender, phone, cnic || null, referring_doctor || null, guardian_name || null, id]
         );
         if (!rows[0]) return res.status(404).json({ error: 'Patient not found' });
         await logAudit('patients', id, null, null, JSON.stringify(req.body), 'UPDATE', req.user.id);

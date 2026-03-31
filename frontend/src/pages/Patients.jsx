@@ -6,11 +6,19 @@ import toast from 'react-hot-toast';
 import LabLoader from '../components/LabLoader.jsx';
 import { useAuth } from '../contexts/AuthContext.jsx';
 
-const EMPTY_FORM = { name: '', age: '', gender: 'Male', phone: '', email: '', address: '', cnic: '', referring_doctor: '', guardian_name: '' };
+const EMPTY_FORM = { name: '', age: '', gender: 'Male', phone: '', cnic: '', referring_doctor: '', guardian_name: '' };
 
 function PatientModal({ patient, onClose, onSaved, onDeleted }) {
     const { user } = useAuth();
-    const [form, setForm] = useState(patient ? { ...patient } : EMPTY_FORM);
+    const [form, setForm] = useState(patient ? { 
+        name: patient.name, 
+        age: patient.age, 
+        gender: patient.gender, 
+        phone: patient.phone, 
+        cnic: patient.cnic, 
+        referring_doctor: patient.referring_doctor, 
+        guardian_name: patient.guardian_name 
+    } : EMPTY_FORM);
     const [loading, setLoading] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -72,10 +80,7 @@ function PatientModal({ patient, onClose, onSaved, onDeleted }) {
                             <label className="label">Phone</label>
                             <input className="input" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="+92-300-..." />
                         </div>
-                        <div>
-                            <label className="label">Email</label>
-                            <input type="email" className="input" value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} />
-                        </div>
+
                         <div>
                             <label className="label">CNIC Number</label>
                             <input className="input" value={form.cnic || ''} onChange={e => setForm(p => ({ ...p, cnic: e.target.value }))} placeholder="12345-1234567-1" />
@@ -84,10 +89,7 @@ function PatientModal({ patient, onClose, onSaved, onDeleted }) {
                             <label className="label">Referring Doctor</label>
                             <input className="input" value={form.referring_doctor || ''} onChange={e => setForm(p => ({ ...p, referring_doctor: e.target.value }))} placeholder="e.g. Dr. Muhammad Ahmed" />
                         </div>
-                        <div className="md:col-span-2">
-                            <label className="label">Address</label>
-                            <textarea className="input" rows={2} value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} />
-                        </div>
+
                     </div>
                     <div className="flex items-center justify-between pt-2">
                         <div>
@@ -285,7 +287,7 @@ export default function Patients() {
                                     return (
                                         <tr key={p.id}>
                                             <td><span className="font-mono text-[13px] text-slate-800 dark:text-slate-200 font-medium">{p.patient_id}</span></td>
-                                            <td className="sticky-col"><div className="font-medium text-slate-800 dark:text-slate-200">{p.name}</div><div className="text-xs text-slate-400">{p.email}</div></td>
+                                            <td className="sticky-col"><div className="font-medium text-slate-800 dark:text-slate-200">{p.name}</div></td>
                                             <td className="text-sm">{p.age !== null && p.age !== undefined ? `${p.age}yr` : '—'} / {p.gender || '—'}</td>
                                             <td className="text-sm">{p.phone || '—'}</td>
                                             <td className="text-xs text-slate-400">{new Date(p.created_at).toLocaleDateString()}</td>
