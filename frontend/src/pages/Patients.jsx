@@ -8,6 +8,12 @@ import { useAuth } from '../contexts/AuthContext.jsx';
 
 const EMPTY_FORM = { name: '', age: '', gender: 'Male', phone: '', cnic: '', referring_doctor: '', guardian_name: '' };
 
+const getGuardianLabel = (gender) => {
+    if (gender === 'Male') return 'S/O';
+    if (gender === 'Female') return 'D/O';
+    return 'S/O or D/O';
+};
+
 function PatientModal({ patient, onClose, onSaved, onDeleted }) {
     const { user } = useAuth();
     const [form, setForm] = useState(patient ? { 
@@ -63,8 +69,8 @@ function PatientModal({ patient, onClose, onSaved, onDeleted }) {
                             <input className="input" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="label">S/O or W/O</label>
-                            <input className="input" value={form.guardian_name || ''} onChange={e => setForm(p => ({ ...p, guardian_name: e.target.value }))} placeholder="e.g. Muhammad Sajid" />
+                            <label className="label">{getGuardianLabel(form.gender)}</label>
+                            <input className="input" value={form.guardian_name || ''} onChange={e => setForm(p => ({ ...p, guardian_name: e.target.value }))} placeholder="Guardian name" />
                         </div>
                         <div>
                             <label className="label">Age</label>
